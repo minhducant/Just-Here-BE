@@ -1,14 +1,14 @@
 import { Job } from 'bullmq';
 import { Model } from 'mongoose';
+import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
 
 import { MailService } from 'src/modules/mail/mail.service';
-import { JUST_HERE_QUEUE } from 'src/shares/queue/justhere.queue';
 import { User, UserDocument } from '../user/schemas/user.schema';
-import { Contact, ContactDocument } from '../contact/schemas/contact.schema';
+import { JUST_HERE_QUEUE } from 'src/shares/queue/justhere.queue';
 import { NotificationService } from '../notification/notification.service';
+import { Contact, ContactDocument } from '../contact/schemas/contact.schema';
 
 @Processor(JUST_HERE_QUEUE)
 export class CheckinProcessor extends WorkerHost {
@@ -53,24 +53,20 @@ export class CheckinProcessor extends WorkerHost {
     days: number;
   }): Promise<void> {
     const { userId, days } = data;
-
     await this.notificationService.sendNotification({
       user_id: userId,
       title: 'We miss you!',
       body: `You haven't checked in for ${days} day${days !== 1 ? 's' : ''}. Please check in to let your loved ones know you're okay.`,
       data: {},
     });
-
     const [user, contacts] = await Promise.all([
       this.userModel.findById(userId).exec(),
       this.contactModel.find({ user_id: userId }),
     ]);
-
     if (!contacts || contacts.length === 0) {
       this.logger.log(`No contacts found for user ${userId}`);
       return;
     }
-
     const userName = user?.name || user?.full_name || 'Your contact';
     const emailPromises = contacts
       .filter((c) => c.email)
@@ -88,7 +84,6 @@ export class CheckinProcessor extends WorkerHost {
             ),
           ),
       );
-
     await Promise.all(emailPromises);
     this.logger.log(
       `Grace period warning sent for user ${userId}: notified ${emailPromises.length} contact(s)`,

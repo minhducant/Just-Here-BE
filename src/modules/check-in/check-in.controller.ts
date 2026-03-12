@@ -2,7 +2,6 @@ import {
   ApiTags,
   ApiQuery,
   ApiOperation,
-  ApiBearerAuth,
   ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import { Get, Post, Body, Query, Patch, Controller } from '@nestjs/common';
@@ -12,8 +11,8 @@ import { CheckinService } from './check-in.service';
 import { GetCheckinDto } from './dto/get-check-in.dto';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { CreateCheckinDto } from './dto/create-check-in.dto';
-import { UserID } from 'src/shares/decorators/get-user-id.decorator';
 import { UserAuth } from 'src/shares/decorators/http.decorators';
+import { UserID } from 'src/shares/decorators/get-user-id.decorator';
 
 @ApiTags('Check In')
 @Controller('checkin')

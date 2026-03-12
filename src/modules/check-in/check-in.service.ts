@@ -78,7 +78,6 @@ export class CheckinService {
   async runGracePeriodCheck(): Promise<{ total: number }> {
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
-
     const users = await this.userModel.aggregate([
       { $match: { status: 'ACTIVE' } },
       {
@@ -139,13 +138,12 @@ export class CheckinService {
       },
       { $project: { _id: 1, grace_period: 1 } },
     ]);
-
     if (!users.length) return { total: 0 };
     await this.justHereQueue.addBulk(
       users.map((u) => ({
         name: 'send-warning',
-        data: { userId: u._id.toString(), days: u.grace_period },
         opts: { removeOnComplete: true, attempts: 3 },
+        data: { userId: u._id.toString(), days: u.grace_period },
       })),
     );
     return { total: users.length };
