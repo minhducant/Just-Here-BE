@@ -109,6 +109,25 @@ export class CheckinService {
     });
   }
 
+  async update(payload: CreateCheckinDto, create_by: string): Promise<void> {
+    const { date } = payload;
+    const startOfDay = new Date(date);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+    await this.checkinModel.updateOne(
+      {
+        user_id: new mongoose.Types.ObjectId(create_by),
+        date: {
+          $gte: startOfDay,
+          $lte: endOfDay,
+        },
+      },
+      { $set: { ...payload } },
+      { upsert: true },
+    );
+  }
+
   async findToday(user_id: string): Promise<Checkin | null> {
     if (!user_id) {
       throw new BadRequestException('User id is required');

@@ -13,6 +13,7 @@ import { JUST_HERE_QUEUE } from 'src/shares/queue/justhere.queue';
 //Customer Module
 import { UserModule } from 'src/modules/user/user.module';
 import { AuthModule } from 'src/modules/auth/auth.module';
+import { ContactModule } from 'src/modules/contact/contact.module';
 import { CheckinModule } from 'src/modules/check-in/check-in.module';
 import { NotificationModule } from 'src/modules/notification/notification.module';
 
@@ -37,6 +38,7 @@ const Modules: any = [
   AuthModule,
   UserModule,
   CheckinModule,
+  ContactModule,
   NotificationModule,
 ];
 export default Modules;

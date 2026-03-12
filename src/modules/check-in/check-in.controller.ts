@@ -3,8 +3,9 @@ import {
   ApiQuery,
   ApiOperation,
   ApiBearerAuth,
+  ApiExcludeEndpoint,
 } from '@nestjs/swagger';
-import { Get, Post, Body, Query, Controller } from '@nestjs/common';
+import { Get, Post, Body, Query, Patch, Controller } from '@nestjs/common';
 
 import { Checkin } from './schemas/check-in.schema';
 import { CheckinService } from './check-in.service';
@@ -16,7 +17,7 @@ import { UserID } from 'src/shares/decorators/get-user-id.decorator';
 @ApiTags('Check In')
 @Controller('checkin')
 export class CheckinController {
-  constructor(private checkinService: CheckinService) {}
+  constructor(private readonly checkinService: CheckinService) {}
 
   @ApiBearerAuth()
   @Get()
@@ -40,8 +41,21 @@ export class CheckinController {
     await this.checkinService.create(body, userId);
   }
 
+  @Patch()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '[Check In] Update Check In',
+  })
+  async updateNote(
+    @Body() body: CreateCheckinDto,
+    @UserID() userId: string,
+  ): Promise<void> {
+    await this.checkinService.update(body, userId);
+  }
+
   @ApiBearerAuth()
   @Post('run-cron')
+  @ApiExcludeEndpoint()
   @ApiQuery({
     name: 'days',
     required: false,

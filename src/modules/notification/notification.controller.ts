@@ -33,9 +33,16 @@ export class NotificationController {
     return this.notificationService.getNotifications(query, user_id);
   }
 
+  @Delete('/:id')
+  @ApiOperation({ summary: '[Notification] Delete notification by _id' })
+  @ApiBearerAuth()
+  async deleteNotification(@Param('id') notificationId: string): Promise<void> {
+    await this.notificationService.deleteNotificationById(notificationId);
+  }
+
   @Post('/push')
   @ApiBearerAuth()
-  @ApiOperation({ summary: '[Notification] Push notification' })
+  @ApiOperation({ summary: '[Notification] Push notification to user' })
   async pushNotification(
     @Body() SendNotificationDto: SendNotificationDto,
   ): Promise<void> {
@@ -69,12 +76,5 @@ export class NotificationController {
   @ApiOperation({ summary: '[Notification] Read all notifications' })
   async markAllNotificationsAsRead(@UserID() user_id: string): Promise<void> {
     return this.notificationService.readAll(user_id);
-  }
-
-  @Delete('/delete/:id')
-  @ApiOperation({ summary: '[Notification] Delete notification by _id' })
-  @ApiBearerAuth()
-  async deleteNotification(@Param('id') notificationId: string): Promise<void> {
-    await this.notificationService.deleteNotificationById(notificationId);
   }
 }

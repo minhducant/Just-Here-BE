@@ -1,7 +1,15 @@
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-import { UserStatus } from 'src/shares/enums/user.enum';
+import {
+  CheckinTime,
+  GracePeriod,
+  UserStatus,
+  ThemeType,
+  CheckinType,
+  DEFAULT_CHECKIN_TIME,
+  DEFAULT_GRACE_PERIOD,
+} from 'src/shares/enums/user.enum';
 
 export const USER_MODEL = 'user';
 @Schema({ timestamps: true, collection: USER_MODEL })
@@ -32,6 +40,40 @@ export class User {
 
   @Prop({ type: String, enum: UserStatus, default: UserStatus.INACTIVE })
   status: UserStatus;
+
+  @Prop({
+    type: Number,
+    enum: CheckinTime,
+    default: DEFAULT_CHECKIN_TIME,
+  })
+  checkin_time: CheckinTime;
+
+  @Prop({
+    type: Number,
+    enum: GracePeriod,
+    default: DEFAULT_GRACE_PERIOD,
+  })
+  grace_period: GracePeriod;
+
+  @Prop({
+    type: String,
+    enum: ThemeType,
+    default: ThemeType.SYSTEM,
+  })
+  theme: ThemeType;
+
+  @Prop({
+    type: String,
+    enum: CheckinType,
+    default: CheckinType.DAILY,
+  })
+  checkin_type: CheckinType;
+
+  @Prop({
+    type: Number,
+    default: 7,
+  })
+  time_zone: number;
 
   @Prop({ type: String, unique: true, sparse: true })
   facebook_id: string;
