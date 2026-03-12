@@ -15,6 +15,7 @@ import { UserModule } from 'src/modules/user/user.module';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { ContactModule } from 'src/modules/contact/contact.module';
 import { CheckinModule } from 'src/modules/check-in/check-in.module';
+import { MailModule } from 'src/modules/mail/mail.module';
 import { NotificationModule } from 'src/modules/notification/notification.module';
 
 const Modules: any = [
@@ -40,5 +41,6 @@ const Modules: any = [
   CheckinModule,
   ContactModule,
   NotificationModule,
+  MailModule,
 ];
 export default Modules;

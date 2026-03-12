@@ -1,8 +1,9 @@
 import mongoose, { Model } from 'mongoose';
 import * as firebase from 'firebase-admin';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 
+import { MailService } from 'src/modules/mail/mail.service';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { GetNotificationDto } from './dto/get-notifications.dto';
 import { User, UserDocument } from '../user/schemas/user.schema';
@@ -19,12 +20,15 @@ import {
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Notification.name)
     private notificationModel: Model<NotificationDocument>,
     @InjectModel(NotificationToken.name)
     private notificationTokenModel: Model<NotificationTokenDocument>,
+    private readonly mailService: MailService,
   ) {}
 
   async getNotifications(
@@ -90,7 +94,7 @@ export class NotificationService {
           { $project: { notification_token: 1 } },
         ])
         .exec();
-      if (tokens || tokens.length !== 0) {
+      if (tokens && tokens.length !== 0) {
         const registrationTokens = tokens?.map(
           (token) => token.notification_token,
         );
@@ -101,10 +105,39 @@ export class NotificationService {
           },
           data: data,
         };
+        this.logger.log(
+          `Push notification queued for ${registrationTokens.length} device(s) of user ${user_id}`,
+        );
         // firebase.messaging().sendToDevice(registrationTokens, message);
       }
     } catch (error) {
-      return error;
+      this.logger.error(`Failed to send push notification to user ${user_id}: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  async sendNotificationWithEmail(
+    sendNotificationDto: SendNotificationDto,
+    emailOptions: { to: string; emailSubject?: string },
+  ): Promise<void> {
+    await this.sendNotification(sendNotificationDto);
+
+    const { to, emailSubject } = emailOptions;
+    const { title, body } = sendNotificationDto;
+    const safeBody = body
+      ? body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      : '';
+    try {
+      await this.mailService.sendHtmlMail(
+        to,
+        emailSubject || title,
+        `<p>${safeBody}</p>`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send email notification to ${to}: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
@@ -117,7 +150,7 @@ export class NotificationService {
       );
       return;
     } catch (error) {
-      console.error('Error occurred while updating notification:', error);
+      this.logger.error('Error occurred while updating notification:', error);
       return null;
     }
   }
@@ -129,7 +162,7 @@ export class NotificationService {
         { $set: { is_read: true } },
       );
     } catch (error) {
-      console.error('Error occurred while updating notifications:', error);
+      this.logger.error('Error occurred while updating notifications:', error);
     }
   }
 

@@ -1,6 +1,8 @@
 import { getConfig } from 'src/configs/index';
 
 interface IEmailConfig {
+  host: string;
+  port: number;
   auth: {
     user: string;
     pass: string;
@@ -11,6 +13,8 @@ interface IEmailConfig {
 }
 
 export const mailConfig: IEmailConfig = {
+  host: getConfig().get<string>('mail.host'),
+  port: getConfig().get<number>('mail.port'),
   auth: {
     user: getConfig().get<string>('mail.account'),
     pass: getConfig().get<string>('mail.password'),
