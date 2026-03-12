@@ -71,6 +71,7 @@
     "mongoose-paginate-v2": "^1.8.5",
     "nestjs-console": "^10.0.0",
     "nestjs-i18n": "^10.5.1",
+    "nodemailer": "8.0.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
@@ -92,6 +93,7 @@
     "@types/config": "^3.3.5",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.9.0",
+    "@types/nodemailer": "^7.0.11",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^8.14.0",
     "@typescript-eslint/parser": "^8.14.0",
@@ -123,6 +125,9 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    }
   }
 }

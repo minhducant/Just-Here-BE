@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { MongooseModule } from '@nestjs/mongoose';
 
+import { MailModule } from 'src/modules/mail/mail.module';
 import { User, UserSchema } from '../user/schemas/user.schema';
 import { NotificationService } from './notification.service';
 import { NotificationController } from './notification.controller';
@@ -16,6 +17,7 @@ import {
 
 @Module({
   imports: [
+    MailModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Notification.name, schema: NotificationSchema },

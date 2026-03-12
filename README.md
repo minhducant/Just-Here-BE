@@ -31,6 +31,135 @@
 $ yarn install
 ```
 
+## Environment configuration
+
+Copy `.env.example` to `.env` (or set environment variables directly) before running the project:
+
+```bash
+cp .env.example .env
+```
+
+---
+
+## MailService
+
+Located at `src/modules/mail/`.
+
+### Environment variables
+
+| Variable | Description | Example |
+|---|---|---|
+| `MAIL_ENABLE` | Enable/disable email sending (`true`/`false`) | `false` |
+| `MAIL_HOST` | SMTP server hostname | `smtp.example.com` |
+| `MAIL_PORT` | SMTP server port (587 for TLS, 465 for SSL) | `587` |
+| `MAIL_ACCOUNT` | SMTP username | `user@example.com` |
+| `MAIL_PASSWORD` | SMTP password | `secret` |
+| `MAIL_FROM` | Sender address shown in emails | `"App <no-reply@example.com>"` |
+| `MAIL_SERVICE` | Optional well-known service name (`gmail`, `outlook`, …). If set, `MAIL_HOST`/`MAIL_PORT` are ignored by the transport. | _(empty)_ |
+
+### Usage examples
+
+#### Inject into any service/controller
+
+```typescript
+import { MailService } from 'src/modules/mail/mail.service';
+
+@Injectable()
+export class MyService {
+  constructor(private readonly mailService: MailService) {}
+
+  async example() {
+    // Send plain-text email
+    await this.mailService.sendTextMail(
+      'user@example.com',
+      'Welcome!',
+      'Thanks for joining Just-Here.',
+    );
+
+    // Send HTML email
+    await this.mailService.sendHtmlMail(
+      'user@example.com',
+      'Your report is ready',
+      '<h1>Report</h1><p>Please find your report attached.</p>',
+    );
+
+    // Full control via SendMailDto
+    await this.mailService.sendMail({
+      to: 'user@example.com',
+      subject: 'Meeting reminder',
+      html: '<p>Don\'t forget the meeting at 3 PM.</p>',
+      cc: ['manager@example.com'],
+      bcc: ['archive@example.com'],
+    });
+  }
+}
+```
+
+#### Import MailModule into another module
+
+```typescript
+import { MailModule } from 'src/modules/mail/mail.module';
+
+@Module({
+  imports: [MailModule],
+  providers: [MyService],
+})
+export class MyModule {}
+```
+
+---
+
+## NotificationService
+
+Located at `src/modules/notification/`.
+
+The service handles **in-app notifications** (stored in MongoDB) and **Firebase push notifications**.
+
+### Features
+
+| Feature | Endpoint |
+|---|---|
+| Get notifications for current user (paginated) | `GET /notification` |
+| Push notification to a user | `POST /notification/push` |
+| Mark single notification as read | `POST /notification/read` |
+| Mark all notifications as read | `POST /notification/read-all` |
+| Register device push token | `POST /notification/register` |
+| Delete notification | `DELETE /notification/:id` |
+
+### Usage examples (from another service)
+
+```typescript
+import { NotificationService } from 'src/modules/notification/notification.service';
+
+@Injectable()
+export class MyService {
+  constructor(private readonly notificationService: NotificationService) {}
+
+  async example() {
+    // Send push notification + save to DB
+    await this.notificationService.sendNotification({
+      user_id: '65e1711ef5f60e3a0f3ce603',
+      title: 'New message',
+      body: 'You have a new message from Alice.',
+      data: { type: 'message', id: '65f2cd9fd8c74ec326027960' },
+    });
+
+    // Send push notification AND email in one call
+    await this.notificationService.sendNotificationWithEmail(
+      {
+        user_id: '65e1711ef5f60e3a0f3ce603',
+        title: 'New message',
+        body: 'You have a new message from Alice.',
+        data: {},
+      },
+      { to: 'user@example.com', emailSubject: 'New message on Just-Here' },
+    );
+  }
+}
+```
+
+---
+
 ## Compile and run the project
 
 ```bash
