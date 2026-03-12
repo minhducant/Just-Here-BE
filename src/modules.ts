@@ -23,6 +23,13 @@ const Modules: any = [
   ScheduleModule.forRoot(),
   ConfigModule.forRoot({ isGlobal: true }),
   MongooseModule.forRoot(mongodb.uri, mongodb.options),
+  BullModule.forRoot({
+    connection: {
+      host: redisConfig.host,
+      port: redisConfig.port,
+      password: redisConfig.password,
+    },
+  }),
   BullModule.registerQueue({
     name: JUST_HERE_QUEUE,
   }),
