@@ -41,6 +41,7 @@ report:
 redis:
   host: REDIS_HOST
   port: REDIS_PORT
+  password: ''
 
 kafka:
   brokers: KAFKA_BROKERS
