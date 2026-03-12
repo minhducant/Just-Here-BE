@@ -44,7 +44,7 @@ export const EMOTION_TYPE_MAP: Record<EmotionValue, EmotionType> = {
   [EmotionValue.LONELY]: EmotionType.NEGATIVE,
 };
 
-export enum JustHereType {
+export enum CheckinType {
   DAILY = 'daily',
   TRAVEL = 'travel',
 }

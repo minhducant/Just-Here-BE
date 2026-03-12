@@ -3,4 +3,4 @@ import { IsOptional, IsString, IsNumber, IsMongoId } from 'class-validator';
 
 import { PaginationDto } from 'src/shares/dtos/pagination.dto';
 
-export class GetJustHereDto extends PaginationDto {}
+export class GetCheckinDto extends PaginationDto {}

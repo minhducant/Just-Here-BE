@@ -72,9 +72,9 @@ export class NotificationController {
   }
 
   @Delete('/delete/:id')
-  @ApiOperation({ summary: '[Payment] Delete notification by _id' })
+  @ApiOperation({ summary: '[Notification] Delete notification by _id' })
   @ApiBearerAuth()
-  async deleteWallet(@Param('id') walletId: string): Promise<void> {
-    await this.notificationService.deleteNotificationById(walletId);
+  async deleteNotification(@Param('id') notificationId: string): Promise<void> {
+    await this.notificationService.deleteNotificationById(notificationId);
   }
 }

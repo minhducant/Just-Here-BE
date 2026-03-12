@@ -18,14 +18,14 @@ import {
 
 import {
   EmotionValue,
-  JustHereType,
-} from 'src/modules/justhere/justhere.enum';
+  CheckinType,
+} from 'src/modules/check-in/check-in.enum';
 
 @ValidatorConstraint({ name: 'TravelLocationRequired', async: false })
 export class TravelLocationRequired implements ValidatorConstraintInterface {
   validate(_: any, args: ValidationArguments) {
     const dto = args.object as any;
-    if (dto.type === JustHereType.TRAVEL) {
+    if (dto.type === CheckinType.TRAVEL) {
       return (
         typeof dto.latitude === 'number' && typeof dto.longitude === 'number'
       );
@@ -37,7 +37,7 @@ export class TravelLocationRequired implements ValidatorConstraintInterface {
   }
 }
 
-export class CreateJustHereDto {
+export class CreateCheckinDto {
   @ApiProperty({})
   @IsMongoId()
   user_id: string;
@@ -51,12 +51,12 @@ export class CreateJustHereDto {
   date: Date;
 
   @ApiProperty({
-    enum: JustHereType,
-    default: JustHereType.DAILY,
+    enum: CheckinType,
+    default: CheckinType.DAILY,
   })
   @IsOptional()
-  @IsEnum(JustHereType)
-  type?: JustHereType = JustHereType.DAILY;
+  @IsEnum(CheckinType)
+  type?: CheckinType = CheckinType.DAILY;
 
   @ApiProperty({
     enum: EmotionValue,

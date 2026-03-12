@@ -4,12 +4,12 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { USER_MODEL } from 'src/modules/user/schemas/user.schema';
 import {
   EmotionValue,
-  JustHereType,
-} from 'src/modules/justhere/justhere.enum';
+  CheckinType,
+} from 'src/modules/check-in/check-in.enum';
 
-export const JUST_HERE_MODEL = 'justhere';
-@Schema({ timestamps: true, collection: JUST_HERE_MODEL })
-export class JustHere extends Document {
+export const CHECK_IN_MODEL = 'check_ins';
+@Schema({ timestamps: true, collection: CHECK_IN_MODEL })
+export class Checkin extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: USER_MODEL })
   user_id: string;
 
@@ -18,11 +18,11 @@ export class JustHere extends Document {
 
   @Prop({
     type: String,
-    enum: JustHereType,
-    default: JustHereType.DAILY,
+    enum: CheckinType,
+    default: CheckinType.DAILY,
     index: true,
   })
-  type: JustHereType;
+  type: CheckinType;
 
   @Prop({ type: String, enum: EmotionValue, required: true, index: true })
   emotion: EmotionValue;
@@ -40,13 +40,13 @@ export class JustHere extends Document {
   note?: string;
 }
 
-export type JustHereDocument = JustHere & Document;
+export type CheckinDocument = Checkin & Document;
 
-export const JustHereSchema = SchemaFactory.createForClass(JustHere);
+export const CheckinSchema = SchemaFactory.createForClass(Checkin);
 
-JustHereSchema.index({ user_id: 1, date: 1, type: 1 }, { unique: true });
+CheckinSchema.index({ user_id: 1, date: 1, type: 1 }, { unique: true });
 
-JustHereSchema.pre('validate', function (next) {
+CheckinSchema.pre('validate', function (next) {
   if (this.type === 'travel') {
     if (
       typeof this.latitude !== 'number' ||
