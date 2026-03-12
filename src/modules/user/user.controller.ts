@@ -32,16 +32,6 @@ export class UserController {
     return this.userService.findById(userId);
   }
 
-  @Get('/all')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '[User] Get all user' })
-  async findAllAdmin(
-    @Query() query: GetUsersDto,
-    @UserID() userId: string,
-  ): Promise<ResPagingDto<User[]>> {
-    return this.userService.findAllAdmin(query, userId);
-  }
-
   @Get(':id')
   @ApiBearerAuth()
   @UserAuth()

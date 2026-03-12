@@ -18,7 +18,7 @@ import { SendNotificationDto } from './dto/send-notification.dto';
 import { UserID } from 'src/shares/decorators/get-user-id.decorator';
 import { RegisterNotificationDto } from './dto/register-notification.dto';
 
-@ApiTags('Notifi')
+@ApiTags('Notification')
 @Controller('notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
