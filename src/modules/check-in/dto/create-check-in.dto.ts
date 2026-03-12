@@ -10,6 +10,7 @@ import {
   IsString,
   IsMongoId,
   IsOptional,
+  MaxLength,
   Validate,
   ValidatorConstraint,
   ValidationArguments,
@@ -103,6 +104,7 @@ export class CreateCheckinDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   note?: string;
 
   @Validate(TravelLocationRequired)

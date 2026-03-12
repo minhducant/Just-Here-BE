@@ -1,20 +1,9 @@
-import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  Min,
-  Max,
-  IsUrl,
-  IsDate,
-  IsEnum,
-  IsNumber,
-  IsString,
-  IsMongoId,
-  IsOptional,
-  Validate,
-  ValidatorConstraint,
-  ValidationArguments,
-  ValidatorConstraintInterface,
   IsEmail,
+  IsString,
+  IsOptional,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateContactDto {
@@ -23,6 +12,7 @@ export class CreateContactDto {
     example: 'Nguyen Van A',
   })
   @IsString()
+  @MaxLength(200)
   name: string;
 
   @ApiProperty({
@@ -38,6 +28,7 @@ export class CreateContactDto {
     example: '+84',
   })
   @IsString()
+  @MaxLength(10)
   @IsOptional()
   country_code?: string;
 
@@ -46,6 +37,7 @@ export class CreateContactDto {
     example: '912345678',
   })
   @IsString()
+  @MaxLength(20)
   @IsOptional()
   phone_number?: string;
 }

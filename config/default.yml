@@ -82,6 +82,7 @@ zalo:
 apple:
   jwks: APPLE_JWKS
   issuer: APPLE_ISSUER
+  audience: APPLE_AUDIENCE
 
 facebook:
   graph_api: FACEBOOK_GRAPH_API

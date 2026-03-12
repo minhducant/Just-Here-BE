@@ -99,15 +99,15 @@ export class AuthService {
         date: Date.now(),
       },
       {
-        secret: JWT_CONSTANTS.userAccessTokenSecret,
-        expiresIn: JWT_CONSTANTS.userAccessTokenExpiry,
+        secret: JWT_CONSTANTS.userRefreshTokenSecret,
+        expiresIn: JWT_CONSTANTS.userRefreshTokenExpiry,
       },
     );
-    // await this.cacheManager.set(
-    //   `${USER_AUTH_CACHE_PREFIX}${user['_id']}`,
-    //   refreshToken,
-    //   JWT_CONSTANTS.userAccessTokenExpiry,
-    // );
+    await this.cacheManager.set(
+      `${USER_AUTH_CACHE_PREFIX}${user['_id']}`,
+      refreshToken,
+      JWT_CONSTANTS.userRefreshTokenExpiry * 1000,
+    );
     return refreshToken;
   }
 
@@ -227,8 +227,8 @@ export class AuthService {
         new URL('https://appleid.apple.com/auth/keys'),
       );
       const { payload } = await jwtVerify(identityToken, jwks, {
-        issuer: 'https://appleid.apple.com',
-        audience: ['com.antstudio.justhere.app'],
+        issuer: appleIssuer,
+        audience: [config.get<string>('apple.audience')],
       });
       const appleProfile = {
         sub: payload.sub,
