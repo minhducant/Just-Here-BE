@@ -16,9 +16,11 @@
     "resolveJsonModule": true,
     "types": [
       "node",
-      "jest",
-      // "Multer"
+      "jest"
     ],
-    "paths": {}
+    "paths": {
+      "@app/shared": ["libs/shared/src/index.ts"],
+      "@app/shared/*": ["libs/shared/src/*"]
+    }
   }
 }
