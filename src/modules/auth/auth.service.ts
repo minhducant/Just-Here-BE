@@ -48,9 +48,20 @@ export class AuthService {
   ) {}
 
   async UserGetAccessToken(
-    payload: PayloadRefreshTokenDto,
+    refreshToken: string,
   ): Promise<ResponseRefreshTokenDto> {
-    const { userId, refreshToken } = payload;
+    let payload: PayloadRefreshTokenDto;
+    try {
+      payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: JWT_CONSTANTS.userRefreshTokenSecret,
+      });
+    } catch {
+      throw new HttpException(
+        httpErrors.REFRESH_TOKEN_EXPIRED,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+    const { userId } = payload;
     const [user, oldRefreshToken] = await Promise.all([
       this.userService.findById(userId.toString()),
       this.cacheManager.get<string>(`${USER_AUTH_CACHE_PREFIX}${userId}`),

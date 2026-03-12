@@ -1,20 +1,15 @@
-import { User } from '@sentry/node';
 import { AuthService } from 'src/modules/auth/auth.service';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Post } from '@nestjs/common';
 
 import { UserService } from '../user/user.service';
-import { UserRtGuards } from './guards/user-rt.guard';
 import { LoginAppleDto } from './dto/login-apple.dto';
 import { LoginGoogleDto } from './dto/login-google.dto';
 import { LoginFacebookDto } from './dto/login-facebook.dto';
-import { UserAuth } from 'src/shares/decorators/http.decorators';
 import { LoginAccessTokenDto } from './dto/login-access-token.dto';
-import { UserID } from 'src/shares/decorators/get-user-id.decorator';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResponseLogin } from 'src/modules/auth/dto/response-login.dto';
-import { PayloadRefreshTokenDto } from './dto/payload-refresh-token.dto';
 import { ResponseRefreshTokenDto } from './dto/response-refresh-token.dto';
-import { GetCurrentUser } from 'src/shares/decorators/get-current-user.decorators';
 
 @Controller('auth')
 @ApiTags('Auth')
@@ -26,11 +21,10 @@ export class AuthController {
 
   @Post('refresh')
   @ApiOperation({ summary: '[Auth] Get new Access Token' })
-  @UseGuards(UserRtGuards)
   async userRefreshAccessToken(
-    @GetCurrentUser() user: PayloadRefreshTokenDto,
+    @Body() body: RefreshTokenDto,
   ): Promise<ResponseRefreshTokenDto> {
-    return this.authService.UserGetAccessToken(user);
+    return this.authService.UserGetAccessToken(body.refreshToken);
   }
 
   @Post('social/zalo')
