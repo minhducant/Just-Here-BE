@@ -4,11 +4,10 @@ import { ConsoleModule } from 'nestjs-console';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CacheModule } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-redis-store';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { mongodb } from 'src/configs/database.config';
-import { redisConfig } from 'src/configs/redis.config';
+import { redisConfig, createRedisStore } from 'src/configs/redis.config';
 import { JUST_HERE_QUEUE } from 'src/shares/queue/justhere.queue';
 //Customer Module
 import { UserModule } from 'src/modules/user/user.module';
@@ -34,10 +33,9 @@ const Modules: any = [
     name: JUST_HERE_QUEUE,
   }),
   CacheModule.register({
-    store: redisStore,
-    ...redisConfig,
+    store: createRedisStore(),
     isGlobal: true,
-    ttl: 60,
+    ttl: 60000,
   }),
   EventEmitterModule.forRoot({
     global: true,
