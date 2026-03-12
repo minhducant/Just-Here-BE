@@ -1,6 +1,7 @@
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
+import { Language } from 'src/shares/enums/language.enum';
 import {
   CheckinTime,
   GracePeriod,
@@ -31,6 +32,9 @@ export class User {
 
   @Prop({ type: String, index: true })
   email: string;
+
+  @Prop({ type: String, enum: Language, default: Language.VI })
+  language: Language;
 
   @Prop({ type: Number })
   gender: number;

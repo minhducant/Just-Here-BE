@@ -1,10 +1,11 @@
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { Controller, Get, Delete, Query, Param } from '@nestjs/common';
+import { Controller, Get, Delete, Query, Param, Patch, Body } from '@nestjs/common';
 
 import { User } from './schemas/user.schema';
 import { UserService } from './user.service';
 import { IdDto } from 'src/shares/dtos/param.dto';
 import { GetUsersDto } from './dto/get-users.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { UserAuth } from 'src/shares/decorators/http.decorators';
 import { UserID } from 'src/shares/decorators/get-user-id.decorator';
@@ -47,5 +48,14 @@ export class UserController {
   })
   async delete(@Param() { id }: IdDto): Promise<void> {
     return this.userService.delete(id);
+  }
+
+  @Patch(':id')
+  @UserAuth()
+  @ApiOperation({
+    summary: '[User] Update user by id',
+  })
+  async update(@Param() { id }: IdDto, @Body() updateData: UpdateUserDto): Promise<User> {
+    return this.userService.update(id, updateData);
   }
 }

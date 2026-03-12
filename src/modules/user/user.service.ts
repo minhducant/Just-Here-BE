@@ -7,6 +7,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { GetUserDto } from './dto/get-user.dto';
 import { GetUsersDto } from './dto/get-users.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { UserRole, UserStatus } from 'src/shares/enums/user.enum';
@@ -22,6 +23,31 @@ export class UserService {
 
   async findById(_id: string): Promise<User> {
     return this.userModel.findById(_id).lean().exec();
+  }
+
+  async update(id: string, updateData: UpdateUserDto): Promise<User> {
+    const forbiddenFields = ['_id', 'user_id', 'role', 'status', 'created_at'];
+    forbiddenFields.forEach((field) => delete (updateData as any)[field]);
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $set: {
+            ...updateData,
+            updated_at: new Date(),
+          },
+        },
+        {
+          new: true,
+          runValidators: true,
+        },
+      )
+      .lean()
+      .exec();
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+    return updatedUser;
   }
 
   generateUserId(): string {
