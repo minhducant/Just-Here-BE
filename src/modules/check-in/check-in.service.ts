@@ -22,9 +22,133 @@ export class CheckinService {
     private checkinModel: Model<CheckinDocument>,
   ) {}
 
+  /**
+   * Runs every hour at :00.
+   * Finds all active users whose local check-in hour (checkin_time) matches
+   * the current UTC hour, accounting for each user's time_zone offset,
+   * and queues a check-in reminder notification for each of them.
+   */
+  @Cron('0 * * * *')
+  async sendCheckinReminders(): Promise<void> {
+    await this.runCheckinReminders();
+  }
+
+  async runCheckinReminders(): Promise<{ total: number }> {
+    const currentUTCHour = new Date().getUTCHours();
+    const users = await this.userModel.aggregate([
+      { $match: { status: 'ACTIVE' } },
+      {
+        $match: {
+          $expr: {
+            $eq: [
+              '$checkin_time',
+              {
+                $mod: [
+                  { $add: [{ $add: [currentUTCHour, '$time_zone'] }, 24] },
+                  24,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      { $project: { _id: 1 } },
+    ]);
+    if (!users.length) return { total: 0 };
+    await this.justHereQueue.addBulk(
+      users.map((u) => ({
+        name: 'send-checkin-reminder',
+        data: { userId: u._id.toString() },
+        opts: { removeOnComplete: true, attempts: 3 },
+      })),
+    );
+    return { total: users.length };
+  }
+
+  /**
+   * Runs every day at 9 AM UTC.
+   * Finds all active users whose last check-in was exactly their configured
+   * grace_period days ago and queues a warning notification + contact emails.
+   */
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async checkInactiveUsers(): Promise<void> {
-    await this.runInactiveUserCheck(5);
+    await this.runGracePeriodCheck();
+  }
+
+  async runGracePeriodCheck(): Promise<{ total: number }> {
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+
+    const users = await this.userModel.aggregate([
+      { $match: { status: 'ACTIVE' } },
+      {
+        $lookup: {
+          from: 'check_ins',
+          localField: '_id',
+          foreignField: 'user_id',
+          as: 'records',
+        },
+      },
+      {
+        $addFields: {
+          lastCheckinDate: { $max: '$records.date' },
+        },
+      },
+      {
+        $addFields: {
+          lastCheckinDayStart: {
+            $cond: [
+              { $gt: ['$lastCheckinDate', null] },
+              {
+                $dateFromParts: {
+                  year: { $year: '$lastCheckinDate' },
+                  month: { $month: '$lastCheckinDate' },
+                  day: { $dayOfMonth: '$lastCheckinDate' },
+                },
+              },
+              null,
+            ],
+          },
+        },
+      },
+      {
+        $addFields: {
+          daysSinceLastCheckin: {
+            $cond: [
+              { $gt: ['$lastCheckinDayStart', null] },
+              {
+                $divide: [
+                  { $subtract: [todayStart, '$lastCheckinDayStart'] },
+                  86400000,
+                ],
+              },
+              null,
+            ],
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $gt: ['$daysSinceLastCheckin', null] },
+              { $eq: ['$daysSinceLastCheckin', '$grace_period'] },
+            ],
+          },
+        },
+      },
+      { $project: { _id: 1, grace_period: 1 } },
+    ]);
+
+    if (!users.length) return { total: 0 };
+    await this.justHereQueue.addBulk(
+      users.map((u) => ({
+        name: 'send-warning',
+        data: { userId: u._id.toString(), days: u.grace_period },
+        opts: { removeOnComplete: true, attempts: 3 },
+      })),
+    );
+    return { total: users.length };
   }
 
   async runInactiveUserCheck(days = 5): Promise<{ total: number }> {
