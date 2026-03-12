@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -16,8 +16,11 @@ export class UserRtStrategy extends PassportStrategy(Strategy, 'user-jwt-refresh
     });
   }
 
-  async validate(req: Request, payload: PayloadRefreshTokenDto): Promise<any> {
-    const refreshToken = req.get('authorization').replace('Bearer', '').trim();
+  async validate(req: FastifyRequest, payload: PayloadRefreshTokenDto): Promise<any> {
+    const authHeader = req.headers['authorization'] ?? '';
+    const refreshToken = authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length).trim()
+      : '';
     if (!refreshToken) {
       throw new UnauthorizedException('UNAUTHORIZED');
     }
