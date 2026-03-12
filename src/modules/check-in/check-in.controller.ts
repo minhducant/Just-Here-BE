@@ -13,13 +13,14 @@ import { GetCheckinDto } from './dto/get-check-in.dto';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { CreateCheckinDto } from './dto/create-check-in.dto';
 import { UserID } from 'src/shares/decorators/get-user-id.decorator';
+import { UserAuth } from 'src/shares/decorators/http.decorators';
 
 @ApiTags('Check In')
 @Controller('checkin')
+@UserAuth()
 export class CheckinController {
   constructor(private readonly checkinService: CheckinService) {}
 
-  @ApiBearerAuth()
   @Get()
   @ApiOperation({ summary: '[Check In] Get Check In' })
   async find(
@@ -30,7 +31,6 @@ export class CheckinController {
   }
 
   @Post()
-  @ApiBearerAuth()
   @ApiOperation({
     summary: '[Check In] Create Check In',
   })
@@ -42,7 +42,6 @@ export class CheckinController {
   }
 
   @Patch()
-  @ApiBearerAuth()
   @ApiOperation({
     summary: '[Check In] Update Check In',
   })
@@ -53,7 +52,6 @@ export class CheckinController {
     await this.checkinService.update(body, userId);
   }
 
-  @ApiBearerAuth()
   @Post('run-cron')
   @ApiExcludeEndpoint()
   @ApiQuery({

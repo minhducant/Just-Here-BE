@@ -1,4 +1,4 @@
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -17,14 +17,15 @@ import { GetNotificationDto } from './dto/get-notifications.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { UserID } from 'src/shares/decorators/get-user-id.decorator';
 import { RegisterNotificationDto } from './dto/register-notification.dto';
+import { UserAuth } from 'src/shares/decorators/http.decorators';
 
 @ApiTags('Notification')
 @Controller('notification')
+@UserAuth()
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Get()
-  @ApiBearerAuth()
   @ApiOperation({ summary: '[Notification] Get notifications' })
   async getNotifications(
     @UserID() user_id: string,
@@ -35,13 +36,11 @@ export class NotificationController {
 
   @Delete('/:id')
   @ApiOperation({ summary: '[Notification] Delete notification by _id' })
-  @ApiBearerAuth()
   async deleteNotification(@Param('id') notificationId: string): Promise<void> {
     await this.notificationService.deleteNotificationById(notificationId);
   }
 
   @Post('/push')
-  @ApiBearerAuth()
   @ApiOperation({ summary: '[Notification] Push notification to user' })
   async pushNotification(
     @Body() SendNotificationDto: SendNotificationDto,
@@ -50,7 +49,6 @@ export class NotificationController {
   }
 
   @Post('/read')
-  @ApiBearerAuth()
   @ApiOperation({ summary: '[Notification] Read notification by ID' })
   async markNotificationAsRead(
     @Body() IdDto: IdDto,
@@ -59,7 +57,6 @@ export class NotificationController {
   }
 
   @Post('/register')
-  @ApiBearerAuth()
   @ApiOperation({ summary: '[Notification] Register notification' })
   async registerNotification(
     @UserID() user_id: string,
@@ -72,7 +69,6 @@ export class NotificationController {
   }
 
   @Post('/read-all')
-  @ApiBearerAuth()
   @ApiOperation({ summary: '[Notification] Read all notifications' })
   async markAllNotificationsAsRead(@UserID() user_id: string): Promise<void> {
     return this.notificationService.readAll(user_id);

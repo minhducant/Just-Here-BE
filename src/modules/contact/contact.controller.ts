@@ -1,4 +1,4 @@
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import {
   Get,
   Post,
@@ -16,13 +16,14 @@ import { GetContactDto } from './dto/get-contact.dto';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UserID } from 'src/shares/decorators/get-user-id.decorator';
+import { UserAuth } from 'src/shares/decorators/http.decorators';
 
 @ApiTags('Contact')
 @Controller('contact')
+@UserAuth()
 export class ContactController {
   constructor(private readonly contactService: ContactService) {}
 
-  @ApiBearerAuth()
   @Get()
   @ApiOperation({ summary: '[Contact] Get Contact' })
   async find(
@@ -33,7 +34,6 @@ export class ContactController {
   }
 
   @Post()
-  @ApiBearerAuth()
   @ApiOperation({
     summary: '[Contact] Create Contact',
   })
@@ -45,7 +45,6 @@ export class ContactController {
   }
 
   @Patch(':id')
-  @ApiBearerAuth()
   @ApiOperation({
     summary: '[Contact] Update Contact',
   })
@@ -58,7 +57,6 @@ export class ContactController {
   }
 
   @Delete(':id')
-  @ApiBearerAuth()
   @ApiOperation({
     summary: '[Contact] Delete Contact',
   })

@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsOptional,
   IsString,
+  MaxLength,
 } from 'class-validator';
 
 export class SendMailDto {
@@ -13,6 +14,7 @@ export class SendMailDto {
 
   @ApiProperty({ example: 'Hello from Just-Here!' })
   @IsString()
+  @MaxLength(998)
   subject: string;
 
   @ApiPropertyOptional({ example: 'Plain text content of the email.' })
