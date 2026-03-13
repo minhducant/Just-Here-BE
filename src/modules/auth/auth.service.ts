@@ -90,10 +90,24 @@ export class AuthService {
       );
   }
 
-  async generateUserAccessToken(user: User): Promise<string> {
+  private getUserId(userOrId: User | string | { _id?: string | { toString(): string } } | { toString(): string }): string {
+    if (typeof userOrId === 'string') {
+      return userOrId;
+    }
+
+    if (userOrId && typeof userOrId === 'object' && '_id' in userOrId && userOrId._id) {
+      return userOrId._id.toString();
+    }
+
+    return userOrId.toString();
+  }
+
+  async generateUserAccessToken(user: User | string | { _id?: string | { toString(): string } } | { toString(): string }): Promise<string> {
+    const userId = this.getUserId(user);
+
     return this.jwtService.signAsync(
       {
-        userId: user,
+        userId,
         date: Date.now(),
       },
       {
@@ -103,10 +117,12 @@ export class AuthService {
     );
   }
 
-  async generateUserRefreshToken(user: User): Promise<string> {
+  async generateUserRefreshToken(user: User | string | { _id?: string | { toString(): string } } | { toString(): string }): Promise<string> {
+    const userId = this.getUserId(user);
+
     const refreshToken = await this.jwtService.signAsync(
       {
-        userId: user,
+        userId,
         date: Date.now(),
       },
       {
@@ -115,7 +131,7 @@ export class AuthService {
       },
     );
     await this.cacheManager.set(
-      `${USER_AUTH_CACHE_PREFIX}${user['_id']}`,
+      `${USER_AUTH_CACHE_PREFIX}${userId}`,
       refreshToken,
       JWT_CONSTANTS.userRefreshTokenExpiry * 1000,
     );
@@ -132,7 +148,7 @@ export class AuthService {
     loginFacebookDto: LoginFacebookDto,
   ): Promise<ResponseLogin> {
     const { accessToken } = loginFacebookDto;
-    const url = `${baseFacebookUrl}me?fields=id,first_name,last_name,picture&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/me?fields=id,first_name,last_name,picture&access_token=${accessToken}`;
     const userData: UserFacebookInfoDto = await lastValueFrom(
       this.httpService
         .get(url)
@@ -196,7 +212,7 @@ export class AuthService {
 
   async logInZalo(loginDto: LoginAccessTokenDto): Promise<any> {
     const { accessToken } = loginDto;
-    const url = `${baseZaloUrl}me?fields=id,name,picture`;
+    const url = `https://graph.zalo.me/me?fields=id,name,picture`;
     const userData = await lastValueFrom(
       this.httpService
         .get(url, {
