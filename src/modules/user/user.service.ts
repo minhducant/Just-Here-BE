@@ -1,6 +1,6 @@
 import mongoose, { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { Cache, caching } from 'cache-manager';
+import { Cache } from 'cache-manager';
 import { InjectModel } from '@nestjs/mongoose';
 import {
   Injectable,
@@ -30,14 +30,20 @@ export class UserService {
 
   private readonly activeUserFilter = { is_deleted: { $ne: true } };
 
-  private ensureUserNotDeleted(
-    user: UserDocument | null,
-  ): UserDocument | null {
-    if (user?.is_deleted) {
-      throw new NotFoundException(httpErrors.ACCOUNT_NOT_FOUND);
-    }
-
-    return user;
+  private async restoreSocialUser(
+    user: UserDocument,
+    updateData: Record<string, any>,
+  ): Promise<User> {
+    return this.userModel.findByIdAndUpdate(
+      user._id,
+      {
+        ...updateData,
+        is_deleted: false,
+        deleted_at: null,
+        status: UserStatus.ACTIVE,
+      },
+      { new: true },
+    );
   }
 
   async findById(_id: string): Promise<User> {
@@ -132,17 +138,21 @@ export class UserService {
 
   async findOrCreateFacebookUser(profile: UserFacebookInfoDto): Promise<User> {
     const user_id = this.generateUserId();
-    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
+    const user = await this.userModel.findOne({
       facebook_id: profile.id,
-    }));
+    });
     if (user) {
-      return this.userModel.findByIdAndUpdate(
-        user._id,
-        {
-          lastLoginAt: new Date(),
-        },
-        { new: true },
-      );
+      return user.is_deleted
+        ? this.restoreSocialUser(user, {
+            last_login_at: new Date(),
+          })
+        : this.userModel.findByIdAndUpdate(
+            user._id,
+            {
+              last_login_at: new Date(),
+            },
+            { new: true },
+          );
     }
     return this.userModel.create({
       facebook_id: profile.id,
@@ -159,18 +169,23 @@ export class UserService {
   async findOrCreateGoogleUser(profile: UserGoogleInfoDto): Promise<User> {
     const { sub, picture, given_name, family_name, email } = profile;
     const user_id = this.generateUserId();
-    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
+    const user = await this.userModel.findOne({
       google_id: sub,
-    }));
+    });
     if (user) {
-      return this.userModel.findByIdAndUpdate(
-        user._id,
-        {
-          last_login_at: new Date(),
-          email,
-        },
-        { new: true },
-      );
+      return user.is_deleted
+        ? this.restoreSocialUser(user, {
+            last_login_at: new Date(),
+            email,
+          })
+        : this.userModel.findByIdAndUpdate(
+            user._id,
+            {
+              last_login_at: new Date(),
+              email,
+            },
+            { new: true },
+          );
     }
     return this.userModel.create({
       google_id: sub,
@@ -188,17 +203,21 @@ export class UserService {
   async findOrCreateZaloUser(profile: any): Promise<User> {
     const { name, id, picture } = profile;
     const user_id = this.generateUserId();
-    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
+    const user = await this.userModel.findOne({
       zalo_id: id,
-    }));
+    });
     if (user) {
-      return this.userModel.findByIdAndUpdate(
-        user._id,
-        {
-          last_login_at: new Date(),
-        },
-        { new: true },
-      );
+      return user.is_deleted
+        ? this.restoreSocialUser(user, {
+            last_login_at: new Date(),
+          })
+        : this.userModel.findByIdAndUpdate(
+            user._id,
+            {
+              last_login_at: new Date(),
+            },
+            { new: true },
+          );
     }
     return this.userModel.create({
       zalo_id: id,
@@ -215,18 +234,23 @@ export class UserService {
   async findOrCreateAppleUser(profile: any): Promise<User> {
     const { sub, email } = profile;
     const user_id = this.generateUserId();
-    const existingUser = this.ensureUserNotDeleted(await this.userModel.findOne({
+    const existingUser = await this.userModel.findOne({
       apple_id: sub,
-    }));
+    });
     if (existingUser) {
-      return this.userModel.findByIdAndUpdate(
-        existingUser._id,
-        {
-          last_login_at: new Date(),
-          ...(email && { email }),
-        },
-        { new: true },
-      );
+      return existingUser.is_deleted
+        ? this.restoreSocialUser(existingUser, {
+            last_login_at: new Date(),
+            ...(email && { email }),
+          })
+        : this.userModel.findByIdAndUpdate(
+            existingUser._id,
+            {
+              last_login_at: new Date(),
+              ...(email && { email }),
+            },
+            { new: true },
+          );
     }
     return this.userModel.create({
       apple_id: sub,
@@ -243,17 +267,21 @@ export class UserService {
   async findOrCreateLINEUser(profile: any): Promise<User> {
     const { displayName, userId, pictureUrl } = profile;
     const user_id = this.generateUserId();
-    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
+    const user = await this.userModel.findOne({
       line_id: userId,
-    }));
+    });
     if (user) {
-      return this.userModel.findByIdAndUpdate(
-        user._id,
-        {
-          last_login_at: new Date(),
-        },
-        { new: true },
-      );
+      return user.is_deleted
+        ? this.restoreSocialUser(user, {
+            last_login_at: new Date(),
+          })
+        : this.userModel.findByIdAndUpdate(
+            user._id,
+            {
+              last_login_at: new Date(),
+            },
+            { new: true },
+          );
     }
     return this.userModel.create({
       line_id: userId,
@@ -270,17 +298,21 @@ export class UserService {
   async findOrCreateXUser(profile: any): Promise<User> {
     const { name, id, profile_image_url_https } = profile;
     const user_id = this.generateUserId();
-    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
+    const user = await this.userModel.findOne({
       x_id: id,
-    }));
+    });
     if (user) {
-      return this.userModel.findByIdAndUpdate(
-        user._id,
-        {
-          last_login_at: new Date(),
-        },
-        { new: true },
-      );
+      return user.is_deleted
+        ? this.restoreSocialUser(user, {
+            last_login_at: new Date(),
+          })
+        : this.userModel.findByIdAndUpdate(
+            user._id,
+            {
+              last_login_at: new Date(),
+            },
+            { new: true },
+          );
     }
     return this.userModel.create({
       x_id: id,
