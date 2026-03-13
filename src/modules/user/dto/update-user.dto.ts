@@ -143,4 +143,12 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   is_banned?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Enable or disable notifications',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  notifications_enabled?: boolean;
 }
