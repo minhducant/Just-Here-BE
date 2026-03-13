@@ -90,7 +90,6 @@ async function bootstrap(): Promise<void> {
       defaultModelsExpandDepth: -1,
     },
   });
-
   await app
     .listen({
       port,
