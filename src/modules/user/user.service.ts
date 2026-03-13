@@ -2,7 +2,12 @@ import mongoose, { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { Cache, caching } from 'cache-manager';
 import { InjectModel } from '@nestjs/mongoose';
-import { Injectable, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 import { GetUserDto } from './dto/get-user.dto';
@@ -13,6 +18,8 @@ import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { UserRole, UserStatus } from 'src/shares/enums/user.enum';
 import { UserGoogleInfoDto } from '../auth/dto/user-google-info.dto';
 import { UserFacebookInfoDto } from '../auth/dto/user-facebook-info.dto';
+import { httpErrors } from 'src/shares/exceptions';
+import { USER_AUTH_CACHE_PREFIX } from '../auth/auth.constants';
 
 @Injectable()
 export class UserService {
@@ -21,16 +28,31 @@ export class UserService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
+  private readonly activeUserFilter = { is_deleted: { $ne: true } };
+
+  private ensureUserNotDeleted(
+    user: UserDocument | null,
+  ): UserDocument | null {
+    if (user?.is_deleted) {
+      throw new NotFoundException(httpErrors.ACCOUNT_NOT_FOUND);
+    }
+
+    return user;
+  }
+
   async findById(_id: string): Promise<User> {
-    return this.userModel.findById(_id).lean().exec();
+    return this.userModel
+      .findOne({ _id, ...this.activeUserFilter })
+      .lean()
+      .exec();
   }
 
   async update(id: string, updateData: UpdateUserDto): Promise<User> {
     const forbiddenFields = ['_id', 'user_id', 'role', 'status', 'created_at'];
     forbiddenFields.forEach((field) => delete (updateData as any)[field]);
     const updatedUser = await this.userModel
-      .findByIdAndUpdate(
-        id,
+      .findOneAndUpdate(
+        { _id: id, ...this.activeUserFilter },
         {
           $set: {
             ...updateData,
@@ -45,7 +67,7 @@ export class UserService {
       .lean()
       .exec();
     if (!updatedUser) {
-      throw new Error('User not found');
+      throw new NotFoundException(httpErrors.ACCOUNT_NOT_FOUND);
     }
     return updatedUser;
   }
@@ -65,9 +87,11 @@ export class UserService {
 
   async findOne(condition: GetUserDto, selectPassword = false): Promise<User> {
     if (selectPassword) {
-      return this.userModel.findOne(condition).select('+password');
+      return this.userModel
+        .findOne({ ...condition, ...this.activeUserFilter })
+        .select('+password');
     }
-    return this.userModel.findOne(condition);
+    return this.userModel.findOne({ ...condition, ...this.activeUserFilter });
   }
 
   async findAll(
@@ -75,7 +99,10 @@ export class UserService {
     userId: string,
   ): Promise<ResPagingDto<User[]>> {
     const { sort, page, limit, name } = getUsersDto;
-    const query: any = { _id: { $ne: new mongoose.Types.ObjectId(userId) } };
+    const query: any = {
+      _id: { $ne: new mongoose.Types.ObjectId(userId) },
+      ...this.activeUserFilter,
+    };
     if (name) {
       query.$or = [{ name: { $regex: name, $options: 'i' } }];
     }
@@ -105,9 +132,9 @@ export class UserService {
 
   async findOrCreateFacebookUser(profile: UserFacebookInfoDto): Promise<User> {
     const user_id = this.generateUserId();
-    const user = await this.userModel.findOne({
+    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
       facebook_id: profile.id,
-    });
+    }));
     if (user) {
       return this.userModel.findByIdAndUpdate(
         user._id,
@@ -132,9 +159,9 @@ export class UserService {
   async findOrCreateGoogleUser(profile: UserGoogleInfoDto): Promise<User> {
     const { sub, picture, given_name, family_name, email } = profile;
     const user_id = this.generateUserId();
-    const user = await this.userModel.findOne({
+    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
       google_id: sub,
-    });
+    }));
     if (user) {
       return this.userModel.findByIdAndUpdate(
         user._id,
@@ -161,9 +188,9 @@ export class UserService {
   async findOrCreateZaloUser(profile: any): Promise<User> {
     const { name, id, picture } = profile;
     const user_id = this.generateUserId();
-    const user = await this.userModel.findOne({
+    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
       zalo_id: id,
-    });
+    }));
     if (user) {
       return this.userModel.findByIdAndUpdate(
         user._id,
@@ -188,9 +215,9 @@ export class UserService {
   async findOrCreateAppleUser(profile: any): Promise<User> {
     const { sub, email } = profile;
     const user_id = this.generateUserId();
-    const existingUser = await this.userModel.findOne({
+    const existingUser = this.ensureUserNotDeleted(await this.userModel.findOne({
       apple_id: sub,
-    });
+    }));
     if (existingUser) {
       return this.userModel.findByIdAndUpdate(
         existingUser._id,
@@ -216,9 +243,9 @@ export class UserService {
   async findOrCreateLINEUser(profile: any): Promise<User> {
     const { displayName, userId, pictureUrl } = profile;
     const user_id = this.generateUserId();
-    const user = await this.userModel.findOne({
+    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
       line_id: userId,
-    });
+    }));
     if (user) {
       return this.userModel.findByIdAndUpdate(
         user._id,
@@ -243,9 +270,9 @@ export class UserService {
   async findOrCreateXUser(profile: any): Promise<User> {
     const { name, id, profile_image_url_https } = profile;
     const user_id = this.generateUserId();
-    const user = await this.userModel.findOne({
+    const user = this.ensureUserNotDeleted(await this.userModel.findOne({
       x_id: id,
-    });
+    }));
     if (user) {
       return this.userModel.findByIdAndUpdate(
         user._id,
@@ -256,7 +283,7 @@ export class UserService {
       );
     }
     return this.userModel.create({
-      zalo_id: id,
+      x_id: id,
       name: name,
       user_id: user_id,
       image_url: profile_image_url_https,
@@ -267,10 +294,23 @@ export class UserService {
     });
   }
 
-  async delete(id: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(id, {
-      is_deleted: true,
-      deleted_at: new Date(),
-    });
+  async delete(id: string, requesterId: string): Promise<void> {
+    if (id !== requesterId) {
+      throw new ForbiddenException(httpErrors.FORBIDDEN);
+    }
+
+    const deletedUser = await this.userModel.findOneAndUpdate(
+      { _id: id, ...this.activeUserFilter },
+      {
+        is_deleted: true,
+        deleted_at: new Date(),
+      },
+    );
+
+    if (!deletedUser) {
+      throw new NotFoundException(httpErrors.ACCOUNT_NOT_FOUND);
+    }
+
+    await this.cacheManager.del(`${USER_AUTH_CACHE_PREFIX}${id}`);
   }
 }

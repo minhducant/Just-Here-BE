@@ -46,8 +46,11 @@ export class UserController {
   @ApiOperation({
     summary: '[User] Delete user by id',
   })
-  async delete(@Param() { id }: IdDto): Promise<void> {
-    return this.userService.delete(id);
+  async delete(
+    @Param() { id }: IdDto,
+    @UserID() userId: string,
+  ): Promise<void> {
+    return this.userService.delete(id, userId);
   }
 
   @Patch(':id')
