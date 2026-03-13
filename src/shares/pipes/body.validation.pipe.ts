@@ -26,7 +26,7 @@ export class BodyValidationPipe extends ValidationPipe {
   getMessageFromErrs(errs: ValidationError[], parent: string = null): string {
     return errs
       .map((e) => {
-        const current = parent ? `${parent}.${e.property}` : `${e.property}`; //`${parent ? `${parent}.` : ''}${e.property}`;
+        const current = parent ? `${parent}.${e.property}` : `${e.property}`;
         if (e.children.length > 0) return `${this.getMessageFromErrs(e.children, current)}`;
         else return current;
       })
