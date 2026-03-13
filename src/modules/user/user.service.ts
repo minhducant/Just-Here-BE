@@ -298,7 +298,6 @@ export class UserService {
     if (id !== requesterId) {
       throw new ForbiddenException(httpErrors.FORBIDDEN);
     }
-
     const deletedUser = await this.userModel.findOneAndUpdate(
       { _id: id, ...this.activeUserFilter },
       {
@@ -306,11 +305,9 @@ export class UserService {
         deleted_at: new Date(),
       },
     );
-
     if (!deletedUser) {
       throw new NotFoundException(httpErrors.ACCOUNT_NOT_FOUND);
     }
-
     await this.cacheManager.del(`${USER_AUTH_CACHE_PREFIX}${id}`);
   }
 }

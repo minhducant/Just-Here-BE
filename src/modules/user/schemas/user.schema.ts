@@ -118,6 +118,9 @@ export class User {
   @Prop({ type: Boolean, default: false })
   is_deleted: boolean;
 
+  @Prop({ type: Boolean, default: false })
+  notifications_enabled: boolean;
+
   @Prop({ type: Date })
   deleted_at?: Date;
 }

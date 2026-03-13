@@ -122,6 +122,17 @@ export class NotificationService {
   async sendNotification(sendNotificationDto: SendNotificationDto) {
     const { user_id, title, body, data } = sendNotificationDto;
     try {
+      const user = await this.userModel
+        .findById(user_id)
+        .select({ notifications_enabled: 1 })
+        .lean()
+        .exec();
+      if (!user?.notifications_enabled) {
+        this.logger.log(
+          `Skipping notification for user ${user_id} because notifications are disabled`,
+        );
+        return;
+      }
       await this.notificationModel.create({
         user_id,
         title,
