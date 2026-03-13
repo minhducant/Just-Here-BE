@@ -13,11 +13,13 @@ import { IdDto } from 'src/shares/dtos/param.dto';
 import { Notification } from './schemas/notification.schema';
 import { NotificationService } from './notification.service';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
+import { UserAuth } from 'src/shares/decorators/http.decorators';
 import { GetNotificationDto } from './dto/get-notifications.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { UserID } from 'src/shares/decorators/get-user-id.decorator';
+import { NotificationToken } from './schemas/notification_token.schema';
 import { RegisterNotificationDto } from './dto/register-notification.dto';
-import { UserAuth } from 'src/shares/decorators/http.decorators';
+import { TestNotificationDto } from './dto/test-notification.dto';
 
 @ApiTags('Notification')
 @Controller('notification')
@@ -48,6 +50,15 @@ export class NotificationController {
     return this.notificationService.sendNotification(SendNotificationDto);
   }
 
+  @Post('/test')
+  @ApiOperation({ summary: '[Notification] Send test notification' })
+  async sendTestNotification(
+    @UserID() user_id: string,
+    @Body() body: TestNotificationDto,
+  ): Promise<void> {
+    return this.notificationService.sendTestNotification(user_id, body);
+  }
+
   @Post('/read')
   @ApiOperation({ summary: '[Notification] Read notification by ID' })
   async markNotificationAsRead(
@@ -61,7 +72,7 @@ export class NotificationController {
   async registerNotification(
     @UserID() user_id: string,
     @Body() RegisterNotificationDto: RegisterNotificationDto,
-  ): Promise<void> {
+  ): Promise<NotificationToken> {
     return this.notificationService.registerNotification(
       user_id,
       RegisterNotificationDto,
@@ -72,5 +83,17 @@ export class NotificationController {
   @ApiOperation({ summary: '[Notification] Read all notifications' })
   async markAllNotificationsAsRead(@UserID() user_id: string): Promise<void> {
     return this.notificationService.readAll(user_id);
+  }
+
+  @Post('/unregister')
+  @ApiOperation({ summary: '[Notification] Unregister notification token' })
+  async unregisterNotification(
+    @UserID() user_id: string,
+    @Body() registerNotificationDto: RegisterNotificationDto,
+  ): Promise<{ success: boolean }> {
+    return this.notificationService.unregisterNotification(
+      user_id,
+      registerNotificationDto,
+    );
   }
 }

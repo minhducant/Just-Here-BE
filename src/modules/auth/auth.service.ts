@@ -90,6 +90,22 @@ export class AuthService {
       );
   }
 
+  async logout(
+    userId: string,
+    refreshToken: string,
+  ): Promise<{ success: boolean }> {
+    const cacheKey = `${USER_AUTH_CACHE_PREFIX}${userId}`;
+    const cachedRefreshToken = await this.cacheManager.get<string>(cacheKey);
+    if (!cachedRefreshToken || cachedRefreshToken !== refreshToken) {
+      throw new HttpException(
+        httpErrors.REFRESH_TOKEN_EXPIRED,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    await this.cacheManager.del(cacheKey);
+    return { success: true };
+  }
+
   private getUserId(userOrId: User | string | { _id?: string | { toString(): string } } | { toString(): string }): string {
     if (typeof userOrId === 'string') {
       return userOrId;

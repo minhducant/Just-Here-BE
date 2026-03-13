@@ -202,14 +202,26 @@ export class CheckinService {
     getNoteDto: GetCheckinDto,
     user_id: string,
   ): Promise<ResPagingDto<Checkin[]>> {
-    const { sort, page, limit } = getNoteDto;
+    const { sort, page, limit, from_date, to_date, type } = getNoteDto;
     const query: any = {};
     if (user_id) {
       query.user_id = new mongoose.Types.ObjectId(user_id);
     }
+    if (from_date || to_date) {
+      query.date = {};
+      if (from_date) {
+        query.date.$gte = new Date(from_date);
+      }
+      if (to_date) {
+        query.date.$lte = new Date(to_date);
+      }
+    }
+    if (type) {
+      query.type = type;
+    }
     const pipeline = [
       { $match: query },
-      { $sort: { createdAt: sort } },
+      { $sort: { date: sort, createdAt: sort } },
       { $skip: (page - 1) * limit },
       { $limit: limit },
     ];

@@ -21,6 +21,18 @@ export class AuthController {
     private readonly userService: UserService,
   ) {}
 
+  @Post('logout')
+  @UseGuards(UserRtGuards)
+  @ApiBearerAuth()
+  @ApiBody({ type: RefreshTokenDto, required: false })
+  @ApiOperation({ summary: '[Auth] Logout user' })
+  async logout(
+    @GetCurrentUser('userId') userId: string,
+    @GetCurrentUser('refreshToken') refreshToken: string,
+  ): Promise<{ success: boolean }> {
+    return this.authService.logout(userId, refreshToken);
+  }
+
   @Post('refresh')
   @UseGuards(UserRtGuards)
   @ApiBearerAuth()

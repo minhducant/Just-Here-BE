@@ -1,13 +1,14 @@
 import mongoose, { Model } from 'mongoose';
 import * as firebase from 'firebase-admin';
-import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
 import { MailService } from 'src/modules/mail/mail.service';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { GetNotificationDto } from './dto/get-notifications.dto';
 import { User, UserDocument } from '../user/schemas/user.schema';
 import { SendNotificationDto } from './dto/send-notification.dto';
+import { TestNotificationDto } from './dto/test-notification.dto';
 import { RegisterNotificationDto } from './dto/register-notification.dto';
 import {
   Notification,
@@ -54,29 +55,69 @@ export class NotificationService {
     };
   }
 
+  async getUnreadCount(user_id: string): Promise<{ unreadCount: number }> {
+    const unreadCount = await this.notificationModel.countDocuments({
+      user_id: new mongoose.Types.ObjectId(user_id),
+      is_read: false,
+    });
+
+    return { unreadCount };
+  }
+
   async registerNotification(
     user_id: string,
     payload: RegisterNotificationDto,
-  ) {
-    try {
-      const { notification_token } = payload;
-      let existingNotificationToken =
-        await this.notificationTokenModel.findOneAndUpdate(
-          { user_id, notification_token },
-          { user_id, notification_token, device_type: '', status: 'ACTIVE' },
-          { upsert: true, new: true },
-        );
-      await this.notificationTokenModel.deleteMany({
-        _id: { $ne: existingNotificationToken._id },
-        notification_token,
-        user_id: { $ne: user_id },
-      });
-      return existingNotificationToken;
-    } catch (error) {
-      return error;
+  ): Promise<NotificationToken> {
+    const { notification_token, device_type } = payload;
+    if (!notification_token?.trim()) {
+      throw new BadRequestException('Notification token is required');
     }
+    const existingNotificationToken =
+      await this.notificationTokenModel.findOneAndUpdate(
+        { user_id, notification_token },
+        {
+          user_id,
+          notification_token: notification_token.trim(),
+          device_type: device_type?.trim() || '',
+          status: 'ACTIVE',
+        },
+        { upsert: true, new: true },
+      );
+    await this.notificationTokenModel.deleteMany({
+      _id: { $ne: existingNotificationToken._id },
+      notification_token: notification_token.trim(),
+      user_id: { $ne: user_id },
+    });
+    return existingNotificationToken;
   }
-  async updateNotification(user_id: string, payload: RegisterNotificationDto) {}
+
+  async unregisterNotification(
+    user_id: string,
+    payload: RegisterNotificationDto,
+  ): Promise<{ success: boolean }> {
+    const notificationToken = payload.notification_token?.trim();
+    if (!notificationToken) {
+      throw new BadRequestException('Notification token is required');
+    }
+    await this.notificationTokenModel.deleteOne({
+      user_id,
+      notification_token: notificationToken,
+    });
+    return { success: true };
+  }
+
+  async sendTestNotification(
+    user_id: string,
+    payload: TestNotificationDto,
+  ): Promise<void> {
+    await this.sendNotification({
+      user_id,
+      title: payload.title?.trim() || 'Test notification',
+      body:
+        payload.body?.trim() || 'This is a test notification from Just Here.',
+      data: payload.data || { source: 'manual-test' },
+    });
+  }
 
   async sendNotification(sendNotificationDto: SendNotificationDto) {
     const { user_id, title, body, data } = sendNotificationDto;
@@ -108,10 +149,20 @@ export class NotificationService {
         this.logger.log(
           `Push notification queued for ${registrationTokens.length} device(s) of user ${user_id}`,
         );
-        // firebase.messaging().sendToDevice(registrationTokens, message);
+        await firebase.messaging().sendEachForMulticast({
+          tokens: registrationTokens,
+          notification: {
+            title: title,
+            body: body,
+          },
+          data: data,
+        });
       }
     } catch (error) {
-      this.logger.error(`Failed to send push notification to user ${user_id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send push notification to user ${user_id}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
