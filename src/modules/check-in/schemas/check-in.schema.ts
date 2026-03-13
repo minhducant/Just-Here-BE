@@ -3,7 +3,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 import { USER_MODEL } from 'src/modules/user/schemas/user.schema';
 import {
-  EmotionValue,
+  MoodValue,
   CheckinType,
 } from 'src/modules/check-in/check-in.enum';
 
@@ -24,8 +24,8 @@ export class Checkin extends Document {
   })
   type: CheckinType;
 
-  @Prop({ type: String, enum: EmotionValue, required: true, index: true })
-  emotion: EmotionValue;
+  @Prop({ type: String, enum: MoodValue, required: true, index: true })
+  mood: MoodValue;
 
   @Prop({ type: Number, min: -90, max: 90 })
   latitude?: number;

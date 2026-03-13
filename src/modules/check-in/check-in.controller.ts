@@ -66,4 +66,13 @@ export class CheckinController {
   async testCron(@Query('days') days?: number): Promise<{ total: number }> {
     return this.checkinService.runInactiveUserCheck(days ?? 5);
   }
+
+  @Post('fake-data')
+  // @ApiExcludeEndpoint()
+  @ApiOperation({
+    summary: '[Check In] Seed fake daily check-ins for current user',
+  })
+  async seedFakeData(@UserID() userId: string): Promise<{ total: number }> {
+    return this.checkinService.seedFakeDailyCheckins(userId);
+  }
 }

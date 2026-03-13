@@ -6,6 +6,7 @@ import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Injectable, BadRequestException } from '@nestjs/common';
 
 import { GetCheckinDto } from './dto/get-check-in.dto';
+import { CheckinType, MoodValue } from './check-in.enum';
 import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { CreateCheckinDto } from './dto/create-check-in.dto';
 import { User, UserDocument } from '../user/schemas/user.schema';
@@ -277,5 +278,58 @@ export class CheckinService {
         $lte: endOfToday,
       },
     });
+  }
+
+  async seedFakeDailyCheckins(user_id: string): Promise<{ total: number }> {
+    if (!user_id) {
+      throw new BadRequestException('User id is required');
+    }
+    const userObjectId = new mongoose.Types.ObjectId(user_id);
+    const moodValues = Object.values(MoodValue);
+    const today = new Date();
+    today.setUTCHours(12, 0, 0, 0);
+    const startDate = new Date(today);
+    startDate.setUTCMonth(startDate.getUTCMonth() - 3);
+    const operations: mongoose.AnyBulkWriteOperation<CheckinDocument>[] = [];
+    for (
+      const cursor = new Date(startDate);
+      cursor <= today;
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
+    ) {
+      const checkinDate = new Date(cursor);
+      checkinDate.setUTCHours(12, 0, 0, 0);
+      const startOfDay = new Date(checkinDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(checkinDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      const randomMood =
+        moodValues[Math.floor(Math.random() * moodValues.length)];
+      operations.push({
+        updateOne: {
+          filter: {
+            user_id: userObjectId,
+            type: CheckinType.DAILY,
+            date: {
+              $gte: startOfDay,
+              $lte: endOfDay,
+            },
+          },
+          update: {
+            $set: {
+              user_id,
+              date: checkinDate,
+              type: CheckinType.DAILY,
+              mood: randomMood,
+            },
+          },
+          upsert: true,
+        },
+      });
+    }
+    if (!operations.length) {
+      return { total: 0 };
+    }
+    await this.checkinModel.bulkWrite(operations);
+    return { total: operations.length };
   }
 }

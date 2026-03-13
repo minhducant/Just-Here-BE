@@ -18,7 +18,7 @@ import {
 } from 'class-validator';
 
 import {
-  EmotionValue,
+  MoodValue,
   CheckinType,
 } from 'src/modules/check-in/check-in.enum';
 
@@ -60,11 +60,11 @@ export class CreateCheckinDto {
   type?: CheckinType = CheckinType.DAILY;
 
   @ApiProperty({
-    enum: EmotionValue,
-    example: EmotionValue.STRESSED,
+    enum: MoodValue,
+    example: MoodValue.FRUSTRATED,
   })
-  @IsEnum(EmotionValue)
-  emotion: EmotionValue;
+  @IsEnum(MoodValue)
+  mood: MoodValue;
 
   @ApiProperty({
     example: 21.02776,

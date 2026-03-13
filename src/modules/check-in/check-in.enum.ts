@@ -1,47 +1,33 @@
-export enum EmotionType {
+export enum MoodType {
   POSITIVE = 'positive',
   NEUTRAL = 'neutral',
   NEGATIVE = 'negative',
 }
 
-export enum EmotionValue {
+export enum MoodValue {
   // Positive
   HAPPY = 'happy',
-  GRATEFUL = 'grateful',
   EXCITED = 'excited',
-  PROUD = 'proud',
 
   // Neutral
-  NORMAL = 'normal',
-  CALM = 'calm',
-  TIRED = 'tired',
+  NEUTRAL = 'neutral',
 
   // Negative
   SAD = 'sad',
-  ANGRY = 'angry',
-  STRESSED = 'stressed',
-  ANXIOUS = 'anxious',
-  LONELY = 'lonely',
+  FRUSTRATED = 'frustrated',
 }
 
-export const EMOTION_TYPE_MAP: Record<EmotionValue, EmotionType> = {
+export const MOOD_TYPE_MAP: Record<MoodValue, MoodType> = {
   // Positive
-  [EmotionValue.HAPPY]: EmotionType.POSITIVE,
-  [EmotionValue.GRATEFUL]: EmotionType.POSITIVE,
-  [EmotionValue.EXCITED]: EmotionType.POSITIVE,
-  [EmotionValue.PROUD]: EmotionType.POSITIVE,
+  [MoodValue.HAPPY]: MoodType.POSITIVE,
+  [MoodValue.EXCITED]: MoodType.POSITIVE,
 
   // Neutral
-  [EmotionValue.NORMAL]: EmotionType.NEUTRAL,
-  [EmotionValue.CALM]: EmotionType.NEUTRAL,
-  [EmotionValue.TIRED]: EmotionType.NEUTRAL,
+  [MoodValue.NEUTRAL]: MoodType.NEUTRAL,
 
   // Negative
-  [EmotionValue.SAD]: EmotionType.NEGATIVE,
-  [EmotionValue.ANGRY]: EmotionType.NEGATIVE,
-  [EmotionValue.STRESSED]: EmotionType.NEGATIVE,
-  [EmotionValue.ANXIOUS]: EmotionType.NEGATIVE,
-  [EmotionValue.LONELY]: EmotionType.NEGATIVE,
+  [MoodValue.SAD]: MoodType.NEGATIVE,
+  [MoodValue.FRUSTRATED]: MoodType.NEGATIVE,
 };
 
 export enum CheckinType {
