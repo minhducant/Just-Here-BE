@@ -401,12 +401,12 @@ export class CheckinService {
       }
     }
     const todayKey = this.toUTCDateKey(new Date());
-    const yesterday = new Date();
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    const yesterdayKey = this.toUTCDateKey(yesterday);
+    const tomorrow = new Date();
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const tomorrowKey = this.toUTCDateKey(tomorrow);
     const lastCheckinKey = dateKeys[dateKeys.length - 1];
     const currentCheckinStreak =
-      lastCheckinKey === todayKey || lastCheckinKey === yesterdayKey
+      lastCheckinKey === todayKey || lastCheckinKey === tomorrowKey
         ? runningStreak
         : 0;
     return {
