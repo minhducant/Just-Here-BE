@@ -6,6 +6,7 @@ import { CheckinService } from './check-in.service';
 import { User } from '../user/schemas/user.schema';
 import { Checkin } from './schemas/check-in.schema';
 import { JUST_HERE_QUEUE } from 'src/shares/queue/justhere.queue';
+import { CheckinType, MoodValue } from './check-in.enum';
 
 const mockAddBulk = jest.fn().mockResolvedValue([]);
 const mockQueue = { addBulk: mockAddBulk };
@@ -155,5 +156,87 @@ describe('CheckinService', () => {
       expect(pipeline.length).toBeGreaterThan(0);
     });
   });
-});
+  describe('create', () => {
+    it('should upsert a daily check-in for the same UTC day', async () => {
+      await service.create(
+        {
+          user_id: 'ignored-by-service',
+          date: new Date('2026-03-14T03:15:00.000Z'),
+          mood: MoodValue.HAPPY,
+          type: CheckinType.DAILY,
+        } as any,
+        '65f1f1f1f1f1f1f1f1f1f1f1',
+      );
 
+      expect(mockCheckinModel.updateOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: CheckinType.DAILY,
+          date: {
+            $gte: new Date('2026-03-14T00:00:00.000Z'),
+            $lte: new Date('2026-03-14T23:59:59.999Z'),
+          },
+        }),
+        {
+          $set: expect.objectContaining({
+            user_id: '65f1f1f1f1f1f1f1f1f1f1f1',
+            date: new Date('2026-03-14T12:00:00.000Z'),
+            mood: MoodValue.HAPPY,
+            type: CheckinType.DAILY,
+          }),
+        },
+        { upsert: true },
+      );
+      expect(mockCheckinModel.create).not.toHaveBeenCalled();
+    });
+
+    it('should create travel check-ins without collapsing them by day', async () => {
+      const payload = {
+        user_id: 'ignored-by-service',
+        date: new Date('2026-03-14T03:15:00.000Z'),
+        mood: MoodValue.EXCITED,
+        type: CheckinType.TRAVEL,
+        latitude: 10,
+        longitude: 20,
+      } as any;
+
+      await service.create(payload, '65f1f1f1f1f1f1f1f1f1f1f1');
+
+      expect(mockCheckinModel.create).toHaveBeenCalledWith({
+        ...payload,
+        user_id: '65f1f1f1f1f1f1f1f1f1f1f1',
+      });
+      expect(mockCheckinModel.updateOne).not.toHaveBeenCalled();
+    });
+  });
+  describe('update', () => {
+    it('should scope updates to the same day and check-in type', async () => {
+      await service.update(
+        {
+          user_id: 'ignored-by-service',
+          date: new Date('2026-03-14T03:15:00.000Z'),
+          mood: MoodValue.NEUTRAL,
+          type: CheckinType.DAILY,
+        } as any,
+        '65f1f1f1f1f1f1f1f1f1f1f1',
+      );
+
+      expect(mockCheckinModel.updateOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: CheckinType.DAILY,
+          date: {
+            $gte: new Date('2026-03-14T00:00:00.000Z'),
+            $lte: new Date('2026-03-14T23:59:59.999Z'),
+          },
+        }),
+        {
+          $set: expect.objectContaining({
+            date: new Date('2026-03-14T12:00:00.000Z'),
+            type: CheckinType.DAILY,
+            mood: MoodValue.NEUTRAL,
+          }),
+        },
+        { upsert: true },
+      );
+    });
+  });
+});

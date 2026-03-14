@@ -6,13 +6,11 @@ import {
 } from '@nestjs/swagger';
 import { Get, Post, Body, Query, Patch, Controller } from '@nestjs/common';
 
-import { Checkin } from './schemas/check-in.schema';
-import { CheckinService } from './check-in.service';
 import { GetCheckinDto } from './dto/get-check-in.dto';
-import { ResPagingDto } from 'src/shares/dtos/pagination.dto';
 import { CreateCheckinDto } from './dto/create-check-in.dto';
 import { UserAuth } from 'src/shares/decorators/http.decorators';
 import { UserID } from 'src/shares/decorators/get-user-id.decorator';
+import { CheckinPagingResponse, CheckinService } from './check-in.service';
 
 @ApiTags('Check In')
 @Controller('checkin')
@@ -25,7 +23,7 @@ export class CheckinController {
   async find(
     @UserID() userId: string,
     @Query() query: GetCheckinDto,
-  ): Promise<ResPagingDto<Checkin[]>> {
+  ): Promise<CheckinPagingResponse> {
     return this.checkinService.find(query, userId);
   }
 
@@ -68,7 +66,7 @@ export class CheckinController {
   }
 
   @Post('fake-data')
-  // @ApiExcludeEndpoint()
+  @ApiExcludeEndpoint()
   @ApiOperation({
     summary: '[Check In] Seed fake daily check-ins for current user',
   })

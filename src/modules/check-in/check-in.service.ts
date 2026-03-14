@@ -13,6 +13,11 @@ import { User, UserDocument } from '../user/schemas/user.schema';
 import { JUST_HERE_QUEUE } from 'src/shares/queue/justhere.queue';
 import { Checkin, CheckinDocument } from './schemas/check-in.schema';
 
+export type CheckinPagingResponse = ResPagingDto<Checkin[]> & {
+  currentCheckinStreak: number;
+  longestCheckinStreak: number;
+};
+
 @Injectable()
 export class CheckinService {
   constructor(
@@ -202,7 +207,7 @@ export class CheckinService {
   async find(
     getNoteDto: GetCheckinDto,
     user_id: string,
-  ): Promise<ResPagingDto<Checkin[]>> {
+  ): Promise<CheckinPagingResponse> {
     const { sort, page, limit, from_date, to_date, type } = getNoteDto;
     const query: any = {};
     if (user_id) {
@@ -226,14 +231,16 @@ export class CheckinService {
       { $skip: (page - 1) * limit },
       { $limit: limit },
     ];
-    const [result, total] = await Promise.all([
+    const [result, total, streaks] = await Promise.all([
       this.checkinModel.aggregate(pipeline).exec(),
       this.checkinModel.countDocuments(query),
+      this.getCheckinStreaks(user_id, type),
     ]);
     return {
       result,
       total,
       lastPage: Math.ceil(total / limit),
+      ...streaks,
     };
   }
 
@@ -331,5 +338,88 @@ export class CheckinService {
     }
     await this.checkinModel.bulkWrite(operations);
     return { total: operations.length };
+  }
+
+  private async getCheckinStreaks(
+    user_id: string,
+    type?: CheckinType,
+  ): Promise<Pick<CheckinPagingResponse, 'currentCheckinStreak' | 'longestCheckinStreak'>> {
+    if (!user_id) {
+      return {
+        currentCheckinStreak: 0,
+        longestCheckinStreak: 0,
+      };
+    }
+    const matchQuery: {
+      user_id: mongoose.Types.ObjectId;
+      type?: CheckinType;
+    } = {
+      user_id: new mongoose.Types.ObjectId(user_id),
+    };
+    if (type) {
+      matchQuery.type = type;
+    }
+    const groupedDates = await this.checkinModel.aggregate<{ _id: string }>([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$date',
+              timezone: 'UTC',
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    return this.calculateCheckinStreaks(groupedDates.map((item) => item._id));
+  }
+
+  private calculateCheckinStreaks(
+    dateKeys: string[],
+  ): Pick<CheckinPagingResponse, 'currentCheckinStreak' | 'longestCheckinStreak'> {
+    if (!dateKeys.length) {
+      return {
+        currentCheckinStreak: 0,
+        longestCheckinStreak: 0,
+      };
+    }
+    let longestCheckinStreak = 1;
+    let runningStreak = 1;
+    for (let index = 1; index < dateKeys.length; index += 1) {
+      const previousDay = this.toUTCUnixDay(dateKeys[index - 1]);
+      const currentDay = this.toUTCUnixDay(dateKeys[index]);
+      if (currentDay - previousDay === 1) {
+        runningStreak += 1;
+      } else {
+        runningStreak = 1;
+      }
+      if (runningStreak > longestCheckinStreak) {
+        longestCheckinStreak = runningStreak;
+      }
+    }
+    const todayKey = this.toUTCDateKey(new Date());
+    const yesterday = new Date();
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    const yesterdayKey = this.toUTCDateKey(yesterday);
+    const lastCheckinKey = dateKeys[dateKeys.length - 1];
+    const currentCheckinStreak =
+      lastCheckinKey === todayKey || lastCheckinKey === yesterdayKey
+        ? runningStreak
+        : 0;
+    return {
+      currentCheckinStreak,
+      longestCheckinStreak,
+    };
+  }
+
+  private toUTCUnixDay(dateKey: string): number {
+    return Math.floor(Date.parse(`${dateKey}T00:00:00.000Z`) / 86400000);
+  }
+
+  private toUTCDateKey(date: Date): string {
+    return date.toISOString().slice(0, 10);
   }
 }
