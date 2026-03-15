@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NestJS Cluster Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <div>
+          <h1>NestJS Dashboard</h1>
+          <p>Cluster-style system monitoring</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span id="connection-pill" class="pill">Connecting...</span>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="content">
+        <section class="panel controls-panel">
+          <div class="toolbar">
+            <label for="endpoint">Metrics API</label>
+            <input id="endpoint" type="text" value="/api/v1/system/metrics" />
+            <label for="refresh">Refresh</label>
+            <select id="refresh">
+              <option value="3000">3s</option>
+              <option value="5000" selected>5s</option>
+              <option value="10000">10s</option>
+            </select>
+            <button id="apply">Apply</button>
+          </div>
+          <p class="status" id="status">Bootstrapping dashboard...</p>
+        </section>
+
+        <section class="tiles" id="cards"></section>
+
+        <section class="panel chart-panel">
+          <div class="chart-head">
+            <h2>CPU / Memory Timeline</h2>
+            <small id="chart-meta">Max points: 40</small>
+          </div>
+          <canvas id="timeline" height="240"></canvas>
+        </section>
+
+        <section class="panel cron-panel">
+          <div class="cron-head">
+            <h2>Cron Jobs</h2>
+            <span class="cron-filter" aria-hidden="true">Filter</span>
+          </div>
+          <div class="cron-shell">
+            <table class="cron-table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Name</th>
+                  <th>Namespace</th>
+                  <th>Labels</th>
+                  <th>Schedule</th>
+                  <th>Suspend</th>
+                  <th>Active</th>
+                  <th>Last Schedule</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody id="cron-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
