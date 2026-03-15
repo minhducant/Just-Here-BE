@@ -39,10 +39,6 @@ export class TravelLocationRequired implements ValidatorConstraintInterface {
 }
 
 export class CreateCheckinDto {
-  @ApiProperty({})
-  @IsMongoId()
-  user_id: string;
-
   @ApiProperty({
     example: new Date(),
     type: String,
