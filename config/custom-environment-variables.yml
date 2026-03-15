@@ -55,6 +55,11 @@ zalo:
 google:
   base_api: GOOGLE_BASE_API
 
+apple:
+  jwks: APPLE_JWKS
+  issuer: APPLE_ISSUER
+  audience: APPLE_AUDIENCE
+
 server:
   web_url: WEB_URL
 

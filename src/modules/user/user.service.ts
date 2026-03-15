@@ -232,7 +232,9 @@ export class UserService {
   }
 
   async findOrCreateAppleUser(profile: any): Promise<User> {
-    const { sub, email } = profile;
+    const { sub, email, fullName } = profile;
+    const normalizedFullName =
+      typeof fullName === 'string' ? fullName.trim() : '';
     const user_id = this.generateUserId();
     const existingUser = await this.userModel.findOne({
       apple_id: sub,
@@ -242,12 +244,14 @@ export class UserService {
         ? this.restoreSocialUser(existingUser, {
             last_login_at: new Date(),
             ...(email && { email }),
+            ...(normalizedFullName && { name: normalizedFullName }),
           })
         : this.userModel.findByIdAndUpdate(
             existingUser._id,
             {
               last_login_at: new Date(),
               ...(email && { email }),
+              ...(normalizedFullName && { name: normalizedFullName }),
             },
             { new: true },
           );
@@ -255,7 +259,7 @@ export class UserService {
     return this.userModel.create({
       apple_id: sub,
       user_id,
-      name: email ? email.split('@')[0] : `AppleUser_${user_id}`,
+      name: normalizedFullName || `AppleUser_${user_id}`,
       email: email ?? null,
       role: UserRole.user,
       last_login_at: new Date(),

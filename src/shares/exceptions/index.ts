@@ -191,6 +191,12 @@ export const httpErrors = {
     code: 'ZALO_00000',
   },
 
+  // LINE
+  LINE_TOKEN_INVALID_OR_EXPIRES: {
+    message: 'Access token is invalid or expires.',
+    code: 'LINE_00000',
+  },
+
   // APPLE
   APPLE_TOKEN_INVALID_OR_EXPIRES: {
     message: 'identityToken is invalid or expires.',

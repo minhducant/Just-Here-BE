@@ -1,6 +1,7 @@
 import {
   Inject,
   Injectable,
+  Logger,
   HttpStatus,
   HttpException,
   BadRequestException,
@@ -40,6 +41,8 @@ const baseFacebookUrl = config.get<string>('facebook.graph_api');
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private jwtService: JwtService,
@@ -264,20 +267,22 @@ export class AuthService {
   }
 
   async logInApple(loginDto: LoginAppleDto): Promise<any> {
-    const { identityToken } = loginDto;
+    const { identityToken, fullName } = loginDto;
     try {
-      const jwks = createRemoteJWKSet(
-        new URL('https://appleid.apple.com/auth/keys'),
-      );
-      const { payload } = await jwtVerify(identityToken, jwks, {
-        issuer: appleIssuer,
-        audience: [config.get<string>('apple.audience')],
-      });
+      const { jwks, verifyOptions } = this.buildAppleVerifyConfig();
+      const { payload } = await jwtVerify(identityToken, jwks, verifyOptions);
+      const payloadName =
+        typeof payload.name === 'string' ? payload.name.trim() : '';
+      const normalizedFullName = fullName?.trim() || payloadName || null;
       const appleProfile = {
         sub: payload.sub,
         email: payload.email ?? null,
-        email_verified: payload.email_verified === 'true',
-        is_private_email: payload.is_private_email === 'true',
+        fullName: normalizedFullName,
+        email_verified:
+          payload.email_verified === true || payload.email_verified === 'true',
+        is_private_email:
+          payload.is_private_email === true ||
+          payload.is_private_email === 'true',
       };
       if (!appleProfile.sub) {
         throw new ForbiddenException('Invalid Apple token payload');
@@ -294,8 +299,51 @@ export class AuthService {
         exp: Date.now() + JWT_CONSTANTS.userAccessTokenExpiry,
       };
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown Apple verify error';
+      this.logger.warn(`Apple login verify failed: ${message}`);
       throw new BadRequestException('Apple token invalid or expired');
     }
+  }
+
+  private buildAppleVerifyConfig(): {
+    jwks: ReturnType<typeof createRemoteJWKSet>;
+    verifyOptions: {
+      issuer: string;
+      audience?: string[];
+    };
+  } {
+    const resolvedJwksUrl =
+      !appleJwksUrl || appleJwksUrl === 'APPLE_JWKS'
+        ? 'https://appleid.apple.com/auth/keys'
+        : appleJwksUrl;
+    const resolvedIssuer =
+      !appleIssuer || appleIssuer === 'APPLE_ISSUER'
+        ? 'https://appleid.apple.com'
+        : appleIssuer;
+    const audienceConfig = config.has('apple.audience')
+      ? config.get<string>('apple.audience')
+      : '';
+    const resolvedAudiences =
+      !audienceConfig || audienceConfig === 'APPLE_AUDIENCE'
+        ? []
+        : audienceConfig
+            .split(',')
+            .map((value) => value.trim())
+            .filter(Boolean);
+    const verifyOptions: {
+      issuer: string;
+      audience?: string[];
+    } = {
+      issuer: resolvedIssuer,
+    };
+    if (resolvedAudiences.length) {
+      verifyOptions.audience = resolvedAudiences;
+    }
+    return {
+      jwks: createRemoteJWKSet(new URL(resolvedJwksUrl)),
+      verifyOptions,
+    };
   }
 
   async logInLINE(loginDto: LoginAccessTokenDto): Promise<any> {
@@ -320,7 +368,7 @@ export class AuthService {
         ),
     );
     if (!userData) {
-      throw new BadRequestException(httpErrors.ZALO_TOKEN_INVALID_OR_EXPIRES);
+      throw new BadRequestException(httpErrors.LINE_TOKEN_INVALID_OR_EXPIRES);
     }
     const user = await this.userService.findOrCreateLINEUser(userData);
     const [accessToken_, refreshToken] = await Promise.all([
