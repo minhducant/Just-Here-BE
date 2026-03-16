@@ -22,6 +22,7 @@ const mockCheckinModel = {
   findOne: jest.fn(),
   create: jest.fn(),
   updateOne: jest.fn(),
+  deleteMany: jest.fn(),
 };
 
 const mockConnection = {};
@@ -237,6 +238,19 @@ describe('CheckinService', () => {
         },
         { upsert: true },
       );
+    });
+  });
+
+  describe('deleteAll', () => {
+    it('should delete all check-ins belonging to the current user', async () => {
+      mockCheckinModel.deleteMany.mockResolvedValue({ deletedCount: 3 });
+
+      const result = await service.deleteAll('65f1f1f1f1f1f1f1f1f1f1f1');
+
+      expect(mockCheckinModel.deleteMany).toHaveBeenCalledWith({
+        user_id: expect.anything(),
+      });
+      expect(result).toEqual({ deletedCount: 3 });
     });
   });
 });

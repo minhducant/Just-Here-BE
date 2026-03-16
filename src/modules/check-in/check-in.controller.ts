@@ -1,10 +1,16 @@
 import {
   ApiTags,
-  ApiQuery,
   ApiOperation,
-  ApiExcludeEndpoint,
 } from '@nestjs/swagger';
-import { Get, Post, Body, Query, Patch, Controller } from '@nestjs/common';
+import {
+  Get,
+  Post,
+  Body,
+  Query,
+  Patch,
+  Delete,
+  Controller,
+} from '@nestjs/common';
 
 import { GetCheckinDto } from './dto/get-check-in.dto';
 import { CreateCheckinDto } from './dto/create-check-in.dto';
@@ -49,28 +55,11 @@ export class CheckinController {
     await this.checkinService.update(body, userId);
   }
 
-  @Post('run-cron')
-  @ApiExcludeEndpoint()
-  @ApiQuery({
-    name: 'days',
-    required: false,
-    type: Number,
-    example: 5,
-    description: 'Number of days (default: 5)',
-  })
+  @Delete()
   @ApiOperation({
-    summary: '[Check In] Test Check In Cron manually',
+    summary: '[Check In] Delete all check-ins',
   })
-  async testCron(@Query('days') days?: number): Promise<{ total: number }> {
-    return this.checkinService.runInactiveUserCheck(days ?? 5);
-  }
-
-  @Post('fake-data')
-  @ApiExcludeEndpoint()
-  @ApiOperation({
-    summary: '[Check In] Seed fake daily check-ins for current user',
-  })
-  async seedFakeData(@UserID() userId: string): Promise<{ total: number }> {
-    return this.checkinService.seedFakeDailyCheckins(userId);
+  async deleteAll(@UserID() userId: string): Promise<{ deletedCount: number }> {
+    return this.checkinService.deleteAll(userId);
   }
 }

@@ -37,17 +37,9 @@ export class NotificationController {
   }
 
   @Delete('/:id')
-  @ApiOperation({ summary: '[Notification] Delete notification by _id' })
+  @ApiOperation({ summary: '[Notification] Delete notification' })
   async deleteNotification(@Param('id') notificationId: string): Promise<void> {
     await this.notificationService.deleteNotificationById(notificationId);
-  }
-
-  @Post('/push')
-  @ApiOperation({ summary: '[Notification] Push notification to user' })
-  async pushNotification(
-    @Body() SendNotificationDto: SendNotificationDto,
-  ): Promise<void> {
-    return this.notificationService.sendNotification(SendNotificationDto);
   }
 
   @Post('/test')
@@ -57,6 +49,14 @@ export class NotificationController {
     @Body() body: TestNotificationDto,
   ): Promise<void> {
     return this.notificationService.sendTestNotification(user_id, body);
+  }
+
+  @Post('/push')
+  @ApiOperation({ summary: '[Notification] Push notification to user' })
+  async pushNotification(
+    @Body() SendNotificationDto: SendNotificationDto,
+  ): Promise<void> {
+    return this.notificationService.sendNotification(SendNotificationDto);
   }
 
   @Post('/read')

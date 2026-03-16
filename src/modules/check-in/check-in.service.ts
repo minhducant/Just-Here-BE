@@ -270,6 +270,18 @@ export class CheckinService {
     );
   }
 
+  async deleteAll(user_id: string): Promise<{ deletedCount: number }> {
+    if (!user_id) {
+      throw new BadRequestException('User id is required');
+    }
+    const result = await this.checkinModel.deleteMany({
+      user_id: new mongoose.Types.ObjectId(user_id),
+    });
+    return {
+      deletedCount: result.deletedCount ?? 0,
+    };
+  }
+
   async findToday(user_id: string): Promise<Checkin | null> {
     if (!user_id) {
       throw new BadRequestException('User id is required');
