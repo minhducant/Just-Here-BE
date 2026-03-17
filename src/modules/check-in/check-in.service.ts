@@ -245,14 +245,16 @@ export class CheckinService {
   }
 
   async create(payload: CreateCheckinDto, create_by: string): Promise<void> {
+    const { user_id: _ignoredUserId, ...safePayload } = payload;
     await this.checkinModel.create({
-      ...payload,
+      ...safePayload,
       user_id: create_by,
     });
   }
 
   async update(payload: CreateCheckinDto, create_by: string): Promise<void> {
-    const { date } = payload;
+    const { user_id: _ignoredUserId, ...safePayload } = payload;
+    const { date } = safePayload;
     const startOfDay = new Date(date);
     startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -265,7 +267,7 @@ export class CheckinService {
           $lte: endOfDay,
         },
       },
-      { $set: { ...payload } },
+      { $set: { ...safePayload } },
       { upsert: true },
     );
   }

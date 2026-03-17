@@ -103,6 +103,15 @@ export class CreateCheckinDto {
   @MaxLength(200)
   note?: string;
 
+  @ApiProperty({
+    example: '69b2fc9b210b733185a321e0',
+    required: false,
+    description: 'Deprecated. User id is taken from access token.',
+  })
+  @IsOptional()
+  @IsMongoId()
+  user_id?: string;
+
   @Validate(TravelLocationRequired)
   private readonly _travelLocationCheck: boolean;
 }

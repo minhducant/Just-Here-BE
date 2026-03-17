@@ -27,7 +27,7 @@ export class BodyValidationPipe extends ValidationPipe {
     return errs
       .map((e) => {
         const current = parent ? `${parent}.${e.property}` : `${e.property}`;
-        if (e.children.length > 0) return `${this.getMessageFromErrs(e.children, current)}`;
+        if ((e.children?.length ?? 0) > 0) return `${this.getMessageFromErrs(e.children, current)}`;
         else return current;
       })
       .join(', ');
@@ -36,12 +36,12 @@ export class BodyValidationPipe extends ValidationPipe {
   getPropertyAndContraints(errs: ValidationError[]): unknown[] {
     const details = [];
     errs.forEach((e) => {
-      if (e.children.length > 0) {
+      if ((e.children?.length ?? 0) > 0) {
         this.getPropertyAndContraints(e.children).forEach((e) => details.push(e));
       } else {
         details.push({
           property: e.property,
-          contraints: Object.values(e.constraints),
+          contraints: Object.values(e.constraints ?? {}),
         });
       }
     });
