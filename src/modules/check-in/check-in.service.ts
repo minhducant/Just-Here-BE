@@ -255,10 +255,13 @@ export class CheckinService {
   async update(payload: CreateCheckinDto, create_by: string): Promise<void> {
     const { user_id: _ignoredUserId, ...safePayload } = payload;
     const { date } = safePayload;
-    const startOfDay = new Date(date);
-    startOfDay.setUTCHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setUTCHours(23, 59, 59, 999);
+    const timezoneOffsetMinutes = await this.getUserTimezoneOffsetMinutes(
+      create_by,
+    );
+    const { start: startOfDay, end: endOfDay } = this.getUtcDayRangeAtOffset(
+      date,
+      timezoneOffsetMinutes,
+    );
     await this.checkinModel.updateOne(
       {
         user_id: new mongoose.Types.ObjectId(create_by),
@@ -288,10 +291,12 @@ export class CheckinService {
     if (!user_id) {
       throw new BadRequestException('User id is required');
     }
-    const startOfToday = new Date();
-    startOfToday.setUTCHours(0, 0, 0, 0);
-    const endOfToday = new Date();
-    endOfToday.setUTCHours(23, 59, 59, 999);
+    const timezoneOffsetMinutes =
+      await this.getUserTimezoneOffsetMinutes(user_id);
+    const { start: startOfToday, end: endOfToday } = this.getUtcDayRangeAtOffset(
+      new Date(),
+      timezoneOffsetMinutes,
+    );
     return this.checkinModel.findOne({
       user_id: new mongoose.Types.ObjectId(user_id),
       date: {
@@ -373,6 +378,10 @@ export class CheckinService {
     if (type) {
       matchQuery.type = type;
     }
+    const timezoneOffsetMinutes = await this.getUserTimezoneOffsetMinutes(
+      user_id,
+    );
+    const timezone = this.toMongoTimezoneOffset(timezoneOffsetMinutes);
     const groupedDates = await this.checkinModel.aggregate<{ _id: string }>([
       { $match: matchQuery },
       {
@@ -381,18 +390,22 @@ export class CheckinService {
             $dateToString: {
               format: '%Y-%m-%d',
               date: '$date',
-              timezone: 'UTC',
+              timezone,
             },
           },
         },
       },
       { $sort: { _id: 1 } },
     ]);
-    return this.calculateCheckinStreaks(groupedDates.map((item) => item._id));
+    return this.calculateCheckinStreaks(
+      groupedDates.map((item) => item._id),
+      timezoneOffsetMinutes,
+    );
   }
 
   private calculateCheckinStreaks(
     dateKeys: string[],
+    timezoneOffsetMinutes: number,
   ): Pick<CheckinPagingResponse, 'currentCheckinStreak' | 'longestCheckinStreak'> {
     if (!dateKeys.length) {
       return {
@@ -414,15 +427,9 @@ export class CheckinService {
         longestCheckinStreak = runningStreak;
       }
     }
-    const todayKey = this.toUTCDateKey(new Date());
-    const tomorrow = new Date();
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-    const tomorrowKey = this.toUTCDateKey(tomorrow);
+    const todayKey = this.toDateKeyAtOffset(new Date(), timezoneOffsetMinutes);
     const lastCheckinKey = dateKeys[dateKeys.length - 1];
-    const currentCheckinStreak =
-      lastCheckinKey === todayKey || lastCheckinKey === tomorrowKey
-        ? runningStreak
-        : 0;
+    const currentCheckinStreak = lastCheckinKey === todayKey ? runningStreak : 0;
     return {
       currentCheckinStreak,
       longestCheckinStreak,
@@ -433,7 +440,51 @@ export class CheckinService {
     return Math.floor(Date.parse(`${dateKey}T00:00:00.000Z`) / 86400000);
   }
 
-  private toUTCDateKey(date: Date): string {
-    return date.toISOString().slice(0, 10);
+  private toDateKeyAtOffset(date: Date, timezoneOffsetMinutes: number): string {
+    return new Date(date.getTime() + timezoneOffsetMinutes * 60000)
+      .toISOString()
+      .slice(0, 10);
+  }
+
+  private getUtcDayRangeAtOffset(
+    date: Date,
+    timezoneOffsetMinutes: number,
+  ): { start: Date; end: Date } {
+    const shiftedDate = new Date(date.getTime() + timezoneOffsetMinutes * 60000);
+    const year = shiftedDate.getUTCFullYear();
+    const month = shiftedDate.getUTCMonth();
+    const day = shiftedDate.getUTCDate();
+
+    const startUtcMs =
+      Date.UTC(year, month, day, 0, 0, 0, 0) - timezoneOffsetMinutes * 60000;
+    const endUtcMs =
+      Date.UTC(year, month, day, 23, 59, 59, 999) -
+      timezoneOffsetMinutes * 60000;
+
+    return {
+      start: new Date(startUtcMs),
+      end: new Date(endUtcMs),
+    };
+  }
+
+  private async getUserTimezoneOffsetMinutes(userId: string): Promise<number> {
+    const user = await this.userModel
+      .findById(userId, { time_zone: 1 })
+      .lean<{ time_zone?: number }>();
+    const timezoneHours =
+      typeof user?.time_zone === 'number' && Number.isFinite(user.time_zone)
+        ? user.time_zone
+        : 7;
+    return Math.round(timezoneHours * 60);
+  }
+
+  private toMongoTimezoneOffset(timezoneOffsetMinutes: number): string {
+    const sign = timezoneOffsetMinutes >= 0 ? '+' : '-';
+    const absoluteMinutes = Math.abs(timezoneOffsetMinutes);
+    const hours = Math.floor(absoluteMinutes / 60)
+      .toString()
+      .padStart(2, '0');
+    const minutes = (absoluteMinutes % 60).toString().padStart(2, '0');
+    return `${sign}${hours}:${minutes}`;
   }
 }
