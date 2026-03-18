@@ -109,19 +109,36 @@ export class AuthService {
     return { success: true };
   }
 
-  private getUserId(userOrId: User | string | { _id?: string | { toString(): string } } | { toString(): string }): string {
+  private getUserId(
+    userOrId:
+      | User
+      | string
+      | { _id?: string | { toString(): string } }
+      | { toString(): string },
+  ): string {
     if (typeof userOrId === 'string') {
       return userOrId;
     }
 
-    if (userOrId && typeof userOrId === 'object' && '_id' in userOrId && userOrId._id) {
+    if (
+      userOrId &&
+      typeof userOrId === 'object' &&
+      '_id' in userOrId &&
+      userOrId._id
+    ) {
       return userOrId._id.toString();
     }
 
     return userOrId.toString();
   }
 
-  async generateUserAccessToken(user: User | string | { _id?: string | { toString(): string } } | { toString(): string }): Promise<string> {
+  async generateUserAccessToken(
+    user:
+      | User
+      | string
+      | { _id?: string | { toString(): string } }
+      | { toString(): string },
+  ): Promise<string> {
     const userId = this.getUserId(user);
 
     return this.jwtService.signAsync(
@@ -136,7 +153,13 @@ export class AuthService {
     );
   }
 
-  async generateUserRefreshToken(user: User | string | { _id?: string | { toString(): string } } | { toString(): string }): Promise<string> {
+  async generateUserRefreshToken(
+    user:
+      | User
+      | string
+      | { _id?: string | { toString(): string } }
+      | { toString(): string },
+  ): Promise<string> {
     const userId = this.getUserId(user);
 
     const refreshToken = await this.jwtService.signAsync(
@@ -231,7 +254,7 @@ export class AuthService {
 
   async logInZalo(loginDto: LoginAccessTokenDto): Promise<any> {
     const { accessToken } = loginDto;
-    const url = `https://graph.zalo.me/me?fields=id,name,picture`;
+    const url = `https://graph.zalo.me/v2.0/me?fields=id%2Cname%2Cpicture`;
     const userData = await lastValueFrom(
       this.httpService
         .get(url, {
@@ -246,11 +269,20 @@ export class AuthService {
         )
         .pipe(
           catchError((error) => {
+            this.logger.error(
+              `[Social Login] Zalo API request failed: ${error}`,
+            );
             throw new BadRequestException(error.message);
           }),
         ),
     );
-    if (userData.error === 452) {
+    this.logger.log(
+      `[Social Login] Zalo user data: ${JSON.stringify(userData)}`,
+    );
+    if (!userData || (userData.error && userData.error !== 0)) {
+      this.logger.warn(
+        `[Social Login] Zalo API returned error: ${userData?.error || 'unknown'}, message: ${userData?.message || 'none'}`,
+      );
       throw new BadRequestException(httpErrors.ZALO_TOKEN_INVALID_OR_EXPIRES);
     }
     const user = await this.userService.findOrCreateZaloUser(userData);
