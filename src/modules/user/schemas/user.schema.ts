@@ -36,6 +36,9 @@ export class User {
   @Prop({ type: String, enum: Language, default: Language.VI })
   language: Language;
 
+  @Prop({ type: String, default: 'vi' })
+  locale: string;
+
   @Prop({ type: Number })
   gender: number;
 

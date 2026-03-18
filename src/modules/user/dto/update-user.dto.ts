@@ -70,6 +70,14 @@ export class UpdateUserDto {
   language?: Language;
 
   @ApiPropertyOptional({
+    description: 'User locale',
+    example: 'vi',
+  })
+  @IsOptional()
+  @IsString()
+  locale?: string;
+
+  @ApiPropertyOptional({
     description: 'Gender (0: Female, 1: Male, 2: Other)',
     example: 1,
   })

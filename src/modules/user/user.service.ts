@@ -167,7 +167,7 @@ export class UserService {
   }
 
   async findOrCreateGoogleUser(profile: UserGoogleInfoDto): Promise<User> {
-    const { sub, picture, given_name, family_name, email } = profile;
+    const { sub, picture, given_name, family_name, email, locale } = profile;
     const user_id = this.generateUserId();
     const user = await this.userModel.findOne({
       google_id: sub,
@@ -177,12 +177,14 @@ export class UserService {
         ? this.restoreSocialUser(user, {
             last_login_at: new Date(),
             email,
+            ...(locale ? { locale } : {}),
           })
         : this.userModel.findByIdAndUpdate(
             user._id,
             {
               last_login_at: new Date(),
               email,
+              ...(locale ? { locale } : {}),
             },
             { new: true },
           );
@@ -195,6 +197,7 @@ export class UserService {
       role: UserRole.user,
       last_login_at: new Date(),
       email,
+      ...(locale ? { locale } : {}),
       status: UserStatus.ACTIVE,
       is_verify: true,
     });
