@@ -6,7 +6,6 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-COPY config ./config   # 🔥 thêm dòng này
 
 RUN npm run build
 
@@ -21,7 +20,7 @@ COPY package*.json ./
 RUN npm install --omit=dev --legacy-peer-deps
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/config ./config   # 🔥 thêm dòng này
+COPY --from=builder /app/config ./config
 
 EXPOSE 3000
 
