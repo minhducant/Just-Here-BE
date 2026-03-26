@@ -78,7 +78,7 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('docs', app, document, {
     useGlobalPrefix: true,
     customSiteTitle: name,
-    ui: node_env === 'development',
+    // ui: node_env === 'development',
     swaggerOptions: {
       filter: true,
       deepLinking: true,
