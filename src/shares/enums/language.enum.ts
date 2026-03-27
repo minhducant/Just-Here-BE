@@ -1,8 +1,8 @@
 export enum Language {
-	VI = 'vi',
-	EN = 'en',
-	KH = 'kh',
-	TH = 'th',
-	LA = 'la',
-	MM = 'mm',
+  VI = 'vi',
+  EN = 'en',
+  ID = 'id',
+  JA = 'ja',
+  KO = 'ko',
+  ZH = 'zh',
 }
